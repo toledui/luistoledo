@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.next-dev/
+dist/
+coverage/
+.env
+.env.local
+!.env.example
+*.log
+uploads/
+mysql-data/

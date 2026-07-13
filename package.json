@@ -1,0 +1,20 @@
+{
+  "name": "luistoledo-academy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scripts de desarrollo para Luis Toledo Academy",
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names frontend,backend --prefix-colors cyan,magenta \"npm run dev --prefix frontend\" \"npm run start:dev --prefix backend\"",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
+    "test": "npm run test --prefix frontend && npm run test --prefix backend -- --runInBand",
+    "db:generate": "npm run prisma:generate --prefix backend",
+    "db:migrate": "npm run prisma:migrate --prefix backend",
+    "db:deploy": "npm run prisma:deploy --prefix backend",
+    "db:seed": "npm run prisma:seed --prefix backend",
+    "setup": "npm install --prefix frontend && npm install --prefix backend && npm run db:generate && npm run db:deploy && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

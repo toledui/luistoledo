@@ -1,0 +1,440 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum EmailProvider {
+  LOG
+  DISABLED
+  SMTP
+  GMAIL
+  MICROSOFT
+  AMAZON_SES
+  MAILGUN
+  SENDGRID
+  RESEND
+}
+
+enum EmailQueueStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum MediaKind {
+  IMAGE
+  DOCUMENT
+  VIDEO_EMBED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum LessonType {
+  TEXT
+  VIDEO_EMBED
+  DOCUMENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+  CANCELLED
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique @db.VarChar(191)
+  passwordHash            String
+  firstName               String
+  lastName                String
+  status                  UserStatus               @default(PENDING_VERIFICATION)
+  roles                   UserRole[]
+  sessions                AuthSession[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerifiedAt         DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  mediaAssets             MediaAsset[]
+  createdCourses          Course[]                 @relation("CourseCreator")
+  instructedCourses       Course[]                 @relation("CourseInstructor")
+  enrollments             Enrollment[]
+}
+
+model MediaAsset {
+  id           String    @id @default(cuid())
+  kind         MediaKind
+  name         String    @db.VarChar(191)
+  originalName String?   @db.VarChar(255)
+  url          String    @db.Text
+  mimeType     String?   @db.VarChar(120)
+  sizeBytes    Int?
+  provider     String?   @db.VarChar(80)
+  altText      String?   @db.VarChar(255)
+  uploadedById String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  courseCovers Course[]  @relation("CourseCover")
+  lessons      Lesson[]
+
+  @@index([kind, createdAt])
+  @@index([uploadedById])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           String
+  refreshTokenHash String    @db.VarChar(191)
+  userAgent        String?   @db.VarChar(500)
+  ipAddress        String?   @db.VarChar(64)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model GeneralSetting {
+  id                    Int      @id @default(1)
+  academyName           String   @default("Luis Toledo Academy")
+  legalName             String?
+  tagline               String?
+  supportEmail          String?
+  generalEmail          String?
+  phone                 String?
+  whatsapp              String?
+  address               String?
+  country               String   @default("México")
+  state                 String?
+  city                  String?
+  postalCode            String?
+  timezone              String   @default("America/Mexico_City")
+  defaultLocale         String   @default("es-MX")
+  defaultCurrency       String   @default("MXN")
+  registrationEnabled   Boolean  @default(true)
+  checkoutEnabled       Boolean  @default(true)
+  maintenanceEnabled    Boolean  @default(false)
+  initialSetupCompleted Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model BrandingSetting {
+  id                  Int      @id @default(1)
+  primaryLogoUrl      String?
+  darkLogoUrl         String?
+  emailLogoUrl        String?
+  iconUrl             String?
+  faviconUrl          String?
+  openGraphImageUrl   String?
+  primaryColor        String   @default("#52e1ff")
+  secondaryColor      String   @default("#a983ff")
+  accentColor         String   @default("#b8f34a")
+  darkBackgroundColor String   @default("#07111f")
+  lightSurfaceColor   String   @default("#f7faff")
+  headingFont         String   @default("Space Grotesk")
+  bodyFont            String   @default("Inter")
+  footerText          String?
+  instructorImageUrl  String?
+  signatureImageUrl   String?
+  borderRadius        Int      @default(18)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model SecuritySetting {
+  id                       Int      @id @default(1)
+  loginMaxAttempts         Int      @default(5)
+  lockoutMinutes           Int      @default(15)
+  requireEmailVerification Boolean  @default(true)
+  sessionTimeoutMinutes    Int      @default(10080)
+  passwordMinLength        Int      @default(10)
+  updatedAt                DateTime @updatedAt
+}
+
+model SettingSecret {
+  id             String   @id @default(cuid())
+  domain         String
+  key            String
+  encryptedValue String   @db.Text
+  configured     Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([domain, key])
+}
+
+model SettingAudit {
+  id         String   @id @default(cuid())
+  section    String
+  action     String
+  actorId    String?
+  actorEmail String?
+  changes    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([section, createdAt])
+}
+
+model EmailProviderSetting {
+  id                     Int           @id @default(1)
+  provider               EmailProvider @default(LOG)
+  host                   String?
+  port                   Int           @default(587)
+  encryption             String        @default("STARTTLS")
+  tlsEnabled             Boolean       @default(true)
+  sslEnabled             Boolean       @default(false)
+  usernameEncrypted      String?       @db.Text
+  passwordEncrypted      String?       @db.Text
+  fromName               String        @default("Luis Toledo Academy")
+  fromEmail              String        @default("contacto@luistoledo.com.mx")
+  replyToEmail           String?
+  adminNotificationEmail String?
+  enabled                Boolean       @default(true)
+  saveLogs               Boolean       @default(true)
+  timeoutMs              Int           @default(10000)
+  maxRetries             Int           @default(3)
+  rateLimitPerMinute     Int           @default(20)
+  rateLimitPerHour       Int           @default(200)
+  lastTestedAt           DateTime?
+  lastSuccessAt          DateTime?
+  lastErrorAt            DateTime?
+  lastErrorMessage       String?       @db.VarChar(500)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  event       String
+  subject     String
+  preheader   String?
+  htmlContent String   @db.LongText
+  textContent String   @db.LongText
+  locale      String   @default("es-MX")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([event, locale])
+}
+
+model EmailQueue {
+  id            String           @id @default(cuid())
+  recipient     String
+  subject       String
+  htmlContent   String?          @db.LongText
+  textContent   String           @db.LongText
+  event         String
+  status        EmailQueueStatus @default(PENDING)
+  attempts      Int              @default(0)
+  maxAttempts   Int              @default(3)
+  nextAttemptAt DateTime         @default(now())
+  sentAt        DateTime?
+  errorMessage  String?          @db.VarChar(500)
+  externalId    String?
+  userId        String?
+  orderId       String?
+  courseId      String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status, nextAttemptAt])
+}
+
+model EmailLog {
+  id           String           @id @default(cuid())
+  queueId      String?
+  recipient    String
+  subject      String
+  event        String
+  status       EmailQueueStatus
+  provider     EmailProvider
+  attempts     Int              @default(1)
+  externalId   String?
+  errorMessage String?          @db.VarChar(500)
+  sentAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([status, createdAt])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courses   Course[]
+}
+
+model Course {
+  id               String          @id @default(cuid())
+  title            String          @db.VarChar(191)
+  slug             String          @unique @db.VarChar(191)
+  subtitle         String?         @db.VarChar(255)
+  shortDescription String?         @db.Text
+  description      String?         @db.LongText
+  objectives       String?         @db.LongText
+  requirements     String?         @db.LongText
+  status           CourseStatus    @default(DRAFT)
+  level            CourseLevel     @default(ALL_LEVELS)
+  language         String          @default("es-MX") @db.VarChar(12)
+  price            Decimal         @default(0) @db.Decimal(10, 2)
+  salePrice        Decimal?        @db.Decimal(10, 2)
+  estimatedMinutes Int             @default(0)
+  featured         Boolean         @default(false)
+  categoryId       String?
+  category         Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverMediaId     String?
+  coverMedia       MediaAsset?     @relation("CourseCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  instructorId     String?
+  instructor       User?           @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  createdById      String
+  createdBy        User            @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedAt      DateTime?
+  sections         CourseSection[]
+  enrollments      Enrollment[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, createdAt])
+  @@index([categoryId])
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status      EnrollmentStatus @default(ACTIVE)
+  source      String           @default("MANUAL") @db.VarChar(40)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId, status])
+}
+
+model CourseSection {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String   @db.VarChar(191)
+  description String?  @db.Text
+  position    Int      @default(0)
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id              String        @id @default(cuid())
+  sectionId       String
+  section         CourseSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title           String        @db.VarChar(191)
+  type            LessonType    @default(TEXT)
+  content         String?       @db.LongText
+  mediaId         String?
+  media           MediaAsset?   @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  durationMinutes Int           @default(0)
+  position        Int           @default(0)
+  isPreview       Boolean       @default(false)
+  isPublished     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([sectionId, position])
+}
