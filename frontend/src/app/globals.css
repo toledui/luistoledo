@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
-
 :root {
   --bg: #07111f;
   --bg-soft: #0b1728;
@@ -23,8 +21,8 @@
   --radius-lg: 32px;
   --shadow: 0 24px 80px rgba(14, 31, 53, 0.14);
   --container: min(1180px, calc(100% - 40px));
-  --heading-font: "Space Grotesk";
-  --body-font: "Manrope";
+  --heading-font: var(--font-space-grotesk);
+  --body-font: var(--font-inter);
 }
 
 * {
@@ -40,7 +38,6 @@ body {
   font-family: var(--body-font), sans-serif;
   color: var(--text);
   background: var(--bg);
-  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -136,7 +133,7 @@ svg {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-weight: 700;
   color: var(--bg);
   background: linear-gradient(135deg, var(--primary), var(--lime));
@@ -151,7 +148,7 @@ svg {
 }
 
 .brand-copy strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 16px;
   letter-spacing: -0.02em;
 }
@@ -347,7 +344,7 @@ svg {
 .faq-intro h2,
 .cta-content h2 {
   margin: 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   letter-spacing: -0.05em;
   line-height: 1.04;
 }
@@ -406,7 +403,7 @@ svg {
 }
 
 .hero-proof strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 26px;
   color: white;
 }
@@ -436,7 +433,6 @@ svg {
   );
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.36);
   overflow: hidden;
-  transform: rotate(1.2deg);
 }
 
 .dashboard-card::before {
@@ -525,7 +521,7 @@ svg {
   border-radius: 15px;
   color: var(--bg);
   background: linear-gradient(135deg, var(--primary), var(--lime));
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-weight: 700;
 }
 
@@ -785,7 +781,7 @@ svg {
 
 .trusted-items strong {
   color: #687c94;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 12px;
   letter-spacing: 0.05em;
 }
@@ -933,7 +929,7 @@ svg {
 
 .course-card h3 {
   margin: 18px 0 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 28px;
   letter-spacing: -0.04em;
 }
@@ -1090,13 +1086,13 @@ svg {
   border-radius: 17px;
   color: var(--primary);
   background: rgba(82, 225, 255, 0.08);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-weight: 700;
 }
 
 .step-card h3 {
   margin: 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 20px;
 }
 
@@ -1173,7 +1169,7 @@ svg {
   border-radius: 50%;
   color: white;
   background: linear-gradient(135deg, #183452, #0d1a2b);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 34px;
   font-weight: 700;
   box-shadow: 0 20px 50px rgba(13, 26, 43, 0.2);
@@ -1211,7 +1207,7 @@ svg {
 }
 
 .experience-stamp strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 32px;
   color: #087f97;
 }
@@ -1286,7 +1282,7 @@ svg {
 
 .outcomes-grid h3 {
   margin: 24px 0 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 18px;
 }
 
@@ -1471,7 +1467,7 @@ svg {
 }
 
 .cta-side-card strong {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--heading-font), sans-serif;
   font-size: 21px;
 }
 

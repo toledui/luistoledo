@@ -176,10 +176,18 @@
   color: #079bb9;
 }
 .checkout > section {
+  min-width: 0;
   padding: 28px;
   border: 1px solid #dce4eb;
   border-radius: 15px;
   background: #fff;
+}
+.checkout > aside,
+.checkout > section > *,
+.paymentMethods label span,
+.identityBox > div,
+.checkoutItem span {
+  min-width: 0;
 }
 .notice {
   display: flex;
@@ -248,6 +256,7 @@
 }
 .coupon input {
   flex: 1;
+  min-width: 0;
   padding: 11px;
   border: 1px solid #ccd7e1;
   border-radius: 8px;
@@ -311,6 +320,7 @@
 }
 .emailCheck input,
 .identityBox input {
+  min-width: 0;
   width: 100%;
   box-sizing: border-box;
   padding: 11px;
@@ -368,6 +378,9 @@
   padding: 10px 0;
   border-bottom: 1px solid #edf1f4;
   font-size: 10px;
+}
+.checkoutItem span {
+  overflow-wrap: anywhere;
 }
 .checkoutItem button {
   border: 0;
@@ -457,6 +470,10 @@
   .checkout {
     width: calc(100% - 24px);
     margin: 22px auto;
+  }
+  .checkout > section,
+  .summary {
+    padding: 20px;
   }
   .title h1,
   .checkout h1 {

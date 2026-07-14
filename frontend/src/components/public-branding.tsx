@@ -19,6 +19,11 @@ type PublicSettings = {
 
 export type BrandingSettings = PublicSettings["branding"];
 
+const availableFonts: Record<string, string> = {
+  Inter: "var(--font-inter)",
+  "Space Grotesk": "var(--font-space-grotesk)",
+};
+
 export function applyBranding(branding: BrandingSettings) {
   const root = document.documentElement;
   root.style.setProperty("--primary", branding.primaryColor);
@@ -38,8 +43,14 @@ export function applyBranding(branding: BrandingSettings) {
   );
   root.style.setProperty("--radius-md", `${branding.borderRadius}px`);
   root.style.setProperty("--radius-lg", `${branding.borderRadius * 1.45}px`);
-  root.style.setProperty("--heading-font", branding.headingFont);
-  root.style.setProperty("--body-font", branding.bodyFont);
+  root.style.setProperty(
+    "--heading-font",
+    availableFonts[branding.headingFont] ?? "var(--font-space-grotesk)",
+  );
+  root.style.setProperty(
+    "--body-font",
+    availableFonts[branding.bodyFont] ?? "var(--font-inter)",
+  );
   if (branding.faviconUrl) {
     let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!favicon) {

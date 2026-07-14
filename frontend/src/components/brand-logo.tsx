@@ -33,5 +33,15 @@ export function BrandLogo({ dark = false }: { dark?: boolean }) {
       .catch(() => undefined);
   }, [dark]);
   if (!url) return <span>TH</span>;
-  return <Image src={url} alt="Luis Toledo Academy" width={42} height={42} unoptimized style={{ width: "100%", height: "100%", objectFit: "contain" }} />;
+  return (
+    <Image
+      src={url}
+      alt="Luis Toledo Academy"
+      width={42}
+      height={42}
+      quality={100}
+      sizes="42px"
+      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+    />
+  );
 }

@@ -84,7 +84,8 @@ export function CartView() {
                       src={item.course.coverMedia.url}
                       alt={item.course.title}
                       fill
-                      unoptimized
+                      quality={85}
+                      sizes="(max-width: 800px) 80px, 110px"
                     />
                   ) : (
                     <BookOpen />

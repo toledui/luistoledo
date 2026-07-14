@@ -588,7 +588,8 @@ export function CourseEditor({ id }: { id: string }) {
                   src={course.coverMedia.url}
                   alt={course.title}
                   fill
-                  unoptimized
+                  quality={85}
+                  sizes="(max-width: 900px) calc(100vw - 48px), 420px"
                 />
               ) : (
                 <BookOpen />

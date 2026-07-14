@@ -224,7 +224,7 @@ export function MediaLibrary() {
                     alt={asset.altText || asset.name}
                     fill
                     sizes="260px"
-                    unoptimized
+                    quality={85}
                   />
                 ) : asset.kind === "VIDEO_EMBED" ? (
                   <Film size={40} />

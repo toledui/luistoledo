@@ -105,7 +105,8 @@ export function CoursesList() {
                     src={course.coverMedia.url}
                     alt={course.coverMedia.altText || course.title}
                     fill
-                    unoptimized
+                    quality={85}
+                    sizes="(max-width: 760px) calc(100vw - 48px), (max-width: 1200px) 50vw, 340px"
                   />
                 ) : (
                   <BookOpen size={38} />

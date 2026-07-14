@@ -116,7 +116,8 @@ export function CourseCatalog() {
                       src={course.coverMedia.url}
                       alt={course.coverMedia.altText || course.title}
                       fill
-                      unoptimized
+                      quality={85}
+                      sizes="(max-width: 700px) calc(100vw - 40px), (max-width: 1050px) 50vw, 370px"
                     />
                   ) : (
                     <BookOpen />

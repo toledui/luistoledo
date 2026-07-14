@@ -259,7 +259,8 @@ export function CoursePublicView({
               src={course.coverMedia.url}
               alt={course.title}
               fill
-              unoptimized
+              quality={85}
+              sizes="(max-width: 900px) calc(100vw - 40px), 480px"
             />
           ) : (
             <BookOpen />

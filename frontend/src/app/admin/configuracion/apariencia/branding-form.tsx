@@ -402,7 +402,8 @@ export function BrandingForm() {
                   alt="Logo"
                   width={110}
                   height={34}
-                  unoptimized
+                  quality={100}
+                  sizes="110px"
                 />
               ) : (
                 <span>LT</span>
