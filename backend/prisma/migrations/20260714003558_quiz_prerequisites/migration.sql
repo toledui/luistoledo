@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `quiz` ADD COLUMN `requirePreviousLessons` BOOLEAN NOT NULL DEFAULT true;

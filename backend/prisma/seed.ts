@@ -99,6 +99,11 @@ async function main() {
     update: {},
     create: { id: 1 },
   });
+  await prisma.paymentProviderSetting.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
   for (const template of DEFAULT_EMAIL_TEMPLATES)
     await prisma.emailTemplate.upsert({
       where: { event_locale: { event: template.event, locale: 'es-MX' } },

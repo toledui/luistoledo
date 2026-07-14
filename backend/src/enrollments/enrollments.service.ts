@@ -90,6 +90,7 @@ export class EnrollmentsService {
             _count: { select: { sections: true } },
           },
         },
+        courseProgress: true,
       },
     });
   }
@@ -98,6 +99,7 @@ export class EnrollmentsService {
       where: { courseId },
       orderBy: { enrolledAt: 'desc' },
       include: {
+        courseProgress: true,
         user: {
           select: {
             id: true,

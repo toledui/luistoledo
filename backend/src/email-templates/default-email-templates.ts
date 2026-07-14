@@ -76,6 +76,95 @@ export const DEFAULT_EMAIL_TEMPLATES: DefaultEmailTemplate[] = [
     textContent:
       'Hola, {{student_name}}.\n\nRecibimos una solicitud para restablecer la contraseña de {{student_email}}. Crea una nueva aquí:\n{{reset_password_url}}\n\nEl enlace es de un solo uso y tiene vigencia limitada. Si no solicitaste el cambio, ignora este correo.\n\nSoporte: {{support_email}}',
   },
+  {
+    event: 'COURSE_COMPLETED',
+    name: 'Curso completado',
+    subject: '¡Felicidades, {{student_name}}! Completaste {{course_name}}',
+    preheader: 'Tu dedicación dio resultado. Has concluido el curso.',
+    htmlContent: shell(
+      'Meta alcanzada',
+      '¡Completaste {{course_name}}!',
+      paragraph(
+        'Felicidades, <strong>{{student_name}}</strong>. Has concluido todas las lecciones de <strong>{{course_name}}</strong>.',
+      ) +
+        paragraph(
+          'Tu progreso quedó registrado y tu certificado ya está disponible en tu área de aprendizaje.',
+        ) +
+        button('Ver mi curso', '{{course_url}}'),
+      'Sigue desarrollando tus habilidades. Cada curso terminado es una nueva herramienta para tus proyectos.',
+    ),
+    textContent:
+      '¡Felicidades, {{student_name}}! Completaste {{course_name}} en {{academy_name}}. Consulta tu curso aquí: {{course_url}}',
+  },
+  {
+    event: 'CERTIFICATE_GENERATED',
+    name: 'Certificado generado',
+    subject: 'Tu certificado de {{course_name}} está listo',
+    preheader: 'Descarga tu certificado y comparte tu logro.',
+    htmlContent: shell(
+      'Certificado disponible',
+      'Un logro que puedes compartir',
+      paragraph(
+        'Hola, <strong>{{student_name}}</strong>. Generamos tu certificado oficial por completar <strong>{{course_name}}</strong>.',
+      ) +
+        paragraph(
+          'Encontrarás el PDF adjunto a este correo. También puedes descargarlo o verificar su autenticidad desde el siguiente enlace.',
+        ) +
+        button('Verificar certificado', '{{certificate_url}}') +
+        fallback('{{certificate_url}}'),
+      'El certificado incluye un folio y código de verificación únicos. Conserva este correo como respaldo de tu logro.',
+    ),
+    textContent:
+      'Hola, {{student_name}}. Tu certificado de {{course_name}} está listo y se adjunta en PDF. Verifícalo aquí: {{certificate_url}}',
+  },
+  {
+    event: 'ORDER_RECEIVED',
+    name: 'Pedido recibido',
+    subject: 'Recibimos tu pedido {{order_number}}',
+    preheader: 'Tu pedido fue creado correctamente.',
+    htmlContent: shell(
+      'Pedido recibido',
+      'Estamos procesando tu compra',
+      paragraph(
+        'Hola, <strong>{{student_name}}</strong>. Recibimos el pedido <strong>{{order_number}}</strong> por {{order_total}}.',
+      ) + paragraph('Cursos: {{course_name}}'),
+      'Te avisaremos en cuanto el pago quede confirmado.',
+    ),
+    textContent:
+      'Hola {{student_name}}. Recibimos tu pedido {{order_number}} por {{order_total}}. Cursos: {{course_name}}.',
+  },
+  {
+    event: 'PAYMENT_APPROVED',
+    name: 'Pago aprobado',
+    subject: 'Pago confirmado · {{order_number}}',
+    preheader: 'Tu pago fue aprobado.',
+    htmlContent: shell(
+      'Pago confirmado',
+      'Tu compra está lista',
+      paragraph(
+        'Confirmamos el pago del pedido <strong>{{order_number}}</strong> por {{order_total}}.',
+      ) + button('Ir a mis cursos', '{{course_url}}'),
+      'El acceso ya está activo en tu cuenta.',
+    ),
+    textContent:
+      'Pago confirmado para {{order_number}}. Accede a tus cursos: {{course_url}}',
+  },
+  {
+    event: 'COURSE_ENROLLED',
+    name: 'Acceso al curso',
+    subject: 'Ya tienes acceso a {{course_name}}',
+    preheader: 'Comienza a aprender ahora.',
+    htmlContent: shell(
+      'Inscripción activa',
+      'Tus cursos ya están disponibles',
+      paragraph(
+        'Hola, <strong>{{student_name}}</strong>. Ya puedes acceder a: {{course_name}}.',
+      ) + button('Comenzar ahora', '{{course_url}}'),
+      'Tu progreso se guardará automáticamente.',
+    ),
+    textContent:
+      'Ya tienes acceso a {{course_name}}. Comienza aquí: {{course_url}}',
+  },
 ];
 
 export const DEFAULT_EMAIL_TEMPLATES_BY_EVENT = Object.fromEntries(

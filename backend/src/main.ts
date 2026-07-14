@@ -9,13 +9,12 @@ import { join } from 'node:path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 4000);
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
-  app.use(cookieParser());
   app.use(cookieParser());
   app.enableCors({
     origin: config.get<string>('FRONTEND_URL', 'http://localhost:3000'),

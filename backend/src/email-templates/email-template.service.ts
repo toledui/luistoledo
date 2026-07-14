@@ -175,6 +175,7 @@ export class EmailTemplateService {
     event: string,
     recipient: string,
     values: Record<string, string>,
+    attachments?: { filename: string; path: string; contentType?: string }[],
   ) {
     const template = await this.prisma.emailTemplate.findUnique({
       where: { event_locale: { event, locale: 'es-MX' } },
@@ -187,6 +188,7 @@ export class EmailTemplateService {
       this.renderText(template.htmlContent, context),
       this.renderText(template.textContent, context),
       event,
+      attachments,
     );
   }
   async reset(id: string) {

@@ -4,6 +4,7 @@ import {
   Get,
   Ip,
   Post,
+  Patch,
   Req,
   Res,
   UnauthorizedException,
@@ -20,6 +21,9 @@ import { RegisterDto } from './dto/register.dto';
 import { TokenDto } from './dto/token.dto';
 import { EmailDto } from './dto/email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { CheckoutAccountDto } from './dto/checkout-account.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -65,6 +69,26 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
+  }
+
+  @Post('email-status')
+  emailStatus(@Body() dto: EmailDto) {
+    return this.auth.emailStatus(dto.email);
+  }
+
+  @Post('checkout-account')
+  async checkoutAccount(
+    @Body() dto: CheckoutAccountDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.auth.createCheckoutAccount(dto, {
+      ipAddress,
+      userAgent: request.header('user-agent'),
+    });
+    this.setCookies(response, result.accessToken, result.refreshToken);
+    return { user: result.user, passwordSetupSent: true };
   }
 
   @Post('verify-email')
@@ -126,6 +150,27 @@ export class AuthController {
   @UseGuards(AuthGuard)
   me(@Req() request: AuthenticatedRequest) {
     return this.auth.me(request.auth.sub);
+  }
+  @Patch('profile')
+  @UseGuards(AuthGuard)
+  updateProfile(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.auth.updateProfile(request.auth.sub, dto);
+  }
+  @Post('change-password')
+  @UseGuards(AuthGuard)
+  changePassword(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.auth.changePassword(
+      request.auth.sub,
+      request.auth.sessionId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
   @Post('logout')
   @UseGuards(AuthGuard)

@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CourseStatus, EnrollmentStatus, Prisma } from '@prisma/client';
+import {
+  CourseLevel,
+  CourseStatus,
+  EnrollmentStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateCourseDto,
@@ -66,6 +71,43 @@ export class CoursesService {
         category: true,
         coverMedia: true,
         _count: { select: { sections: true } },
+      },
+    });
+  }
+  publicList(filters: {
+    search?: string;
+    category?: string;
+    level?: string;
+    limit?: string;
+  }) {
+    const requestedLimit = Number(filters.limit || 100);
+    const take = Number.isFinite(requestedLimit)
+      ? Math.min(100, Math.max(1, requestedLimit))
+      : 100;
+    return this.prisma.course.findMany({
+      where: {
+        status: CourseStatus.PUBLISHED,
+        ...(filters.search
+          ? {
+              OR: [
+                { title: { contains: filters.search } },
+                { subtitle: { contains: filters.search } },
+                { shortDescription: { contains: filters.search } },
+              ],
+            }
+          : {}),
+        ...(filters.category ? { category: { slug: filters.category } } : {}),
+        ...(filters.level &&
+        Object.values(CourseLevel).includes(filters.level as CourseLevel)
+          ? { level: filters.level as CourseLevel }
+          : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: {
+        category: true,
+        coverMedia: true,
+        _count: { select: { sections: true, enrollments: true } },
       },
     });
   }
@@ -137,13 +179,33 @@ export class CoursesService {
           },
         },
       },
-      include: detailInclude,
+      include: {
+        ...detailInclude,
+        enrollments: {
+          where: {
+            userId,
+            status: {
+              in: [EnrollmentStatus.ACTIVE, EnrollmentStatus.COMPLETED],
+            },
+          },
+          take: 1,
+          include: { courseProgress: true },
+        },
+      },
     });
     if (!course)
       throw new NotFoundException(
         'No tienes una inscripción activa en este curso',
       );
-    return { ...course, adminPreview: false, enrolled: true };
+    const enrollment = course.enrollments[0];
+    return {
+      ...course,
+      enrollments: undefined,
+      adminPreview: false,
+      enrolled: true,
+      startLessonId: enrollment?.courseProgress?.lastLessonId || null,
+      progressPercentage: enrollment?.courseProgress?.percentage || 0,
+    };
   }
   async create(dto: CreateCourseDto, actorId: string) {
     return this.prisma.course.create({
@@ -249,7 +311,13 @@ export class CoursesService {
   async createLesson(sectionId: string, dto: CreateLessonDto) {
     const position = await this.prisma.lesson.count({ where: { sectionId } });
     return this.prisma.lesson.create({
-      data: { sectionId, title: dto.title, type: dto.type, position },
+      data: {
+        sectionId,
+        title: dto.title,
+        type: dto.type,
+        position,
+        isPublished: true,
+      },
     });
   }
   updateLesson(id: string, dto: UpdateLessonDto) {

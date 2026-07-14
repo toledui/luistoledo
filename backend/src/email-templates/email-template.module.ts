@@ -8,5 +8,6 @@ import { EmailTemplateService } from './email-template.service';
   imports: [AuthModule, EmailModule],
   controllers: [EmailTemplateController],
   providers: [EmailTemplateService],
+  exports: [EmailTemplateService],
 })
 export class EmailTemplateModule {}

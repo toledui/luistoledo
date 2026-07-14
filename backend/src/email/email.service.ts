@@ -165,6 +165,7 @@ export class EmailService {
     html: string,
     text: string,
     event: string,
+    attachments?: { filename: string; path: string; contentType?: string }[],
   ) {
     const settings = await this.settings();
     const transport = await this.transporter();
@@ -176,6 +177,7 @@ export class EmailService {
           subject,
           html,
           text,
+          attachments,
         })
       : { messageId: `log-${Date.now()}` };
     await this.prisma.emailLog.create({

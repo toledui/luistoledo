@@ -15,6 +15,11 @@ import { UsersModule } from './users/users.module';
 import { MediaModule } from './media/media.module';
 import { CoursesModule } from './courses/courses.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { LearningModule } from './learning/learning.module';
+import { QuizzesModule } from './quizzes/quizzes.module';
+import { CertificatesModule } from './certificates/certificates.module';
+import { SalesModule } from './sales/sales.module';
+import { ContactsModule } from './contacts/contacts.module';
 
 @Module({
   imports: [
@@ -32,6 +37,11 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     MediaModule,
     CoursesModule,
     EnrollmentsModule,
+    LearningModule,
+    QuizzesModule,
+    CertificatesModule,
+    SalesModule,
+    ContactsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -43,10 +43,12 @@
     "multer": "^2.2.0",
     "nestjs-pino": "^4.6.1",
     "nodemailer": "^9.0.3",
+    "pdfkit": "^0.19.1",
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sanitize-html": "^2.17.6",
+    "stripe": "^22.3.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
@@ -61,6 +63,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/pdfkit": "^0.17.6",
     "@types/sanitize-html": "^2.16.1",
     "@types/supertest": "^7.0.0",
     "eslint": "^9.18.0",

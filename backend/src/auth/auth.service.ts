@@ -10,6 +10,7 @@ import { hash, verify } from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload, AuthUser } from './auth.types';
+import type { UpdateProfileDto } from './dto/update-profile.dto';
 
 type SessionContext = { ipAddress?: string; userAgent?: string };
 
@@ -96,6 +97,43 @@ export class AuthService {
       academy_name: 'Luis Toledo Academy',
     });
     return { registered: true, verificationRequired: true };
+  }
+
+  async emailStatus(email: string) {
+    return {
+      exists: Boolean(
+        await this.prisma.user.findUnique({
+          where: { email: email.trim().toLowerCase() },
+          select: { id: true },
+        }),
+      ),
+    };
+  }
+
+  async createCheckoutAccount(
+    input: { email: string; firstName: string; lastName: string },
+    context: SessionContext,
+  ) {
+    const email = input.email.trim().toLowerCase();
+    if (await this.prisma.user.findUnique({ where: { email } }))
+      throw new ConflictException('Este correo ya tiene una cuenta');
+    const role = await this.prisma.role.findUniqueOrThrow({
+      where: { name: 'STUDENT' },
+    });
+    const temporaryPassword = randomBytes(32).toString('base64url');
+    await this.prisma.user.create({
+      data: {
+        email,
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        passwordHash: await hash(temporaryPassword),
+        status: UserStatus.ACTIVE,
+        emailVerifiedAt: new Date(),
+        roles: { create: { roleId: role.id } },
+      },
+    });
+    await this.forgotPassword(email);
+    return this.login(email, temporaryPassword, context);
   }
 
   async verifyEmail(token: string) {
@@ -213,6 +251,7 @@ export class AuthService {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       include: {
+        profile: true,
         roles: {
           include: {
             role: {
@@ -235,6 +274,7 @@ export class AuthService {
           ),
         ),
       ],
+      profile: user.profile,
     };
   }
 
@@ -317,6 +357,53 @@ export class AuthService {
 
   me(userId: string) {
     return this.userProfile(userId);
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileDto) {
+    const { firstName, lastName, birthDate, ...profile } = input;
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { firstName: firstName.trim(), lastName: lastName.trim() },
+      }),
+      this.prisma.profile.upsert({
+        where: { userId },
+        update: {
+          ...profile,
+          birthDate: birthDate ? new Date(birthDate) : null,
+        },
+        create: {
+          userId,
+          ...profile,
+          birthDate: birthDate ? new Date(birthDate) : null,
+        },
+      }),
+    ]);
+    return this.userProfile(userId);
+  }
+
+  async changePassword(
+    userId: string,
+    currentSessionId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (!(await verify(user.passwordHash, currentPassword)))
+      throw new UnauthorizedException('La contraseña actual no es correcta');
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: await hash(newPassword) },
+      }),
+      this.prisma.authSession.updateMany({
+        where: { userId, id: { not: currentSessionId }, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    return { passwordChanged: true, otherSessionsRevoked: true };
   }
 
   logout(sessionId: string) {
