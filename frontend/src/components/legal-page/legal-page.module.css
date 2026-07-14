@@ -1,0 +1,185 @@
+.page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  color: #17263b;
+}
+.page > header {
+  padding: 75px max(24px, calc((100% - 1120px) / 2));
+  background:
+    radial-gradient(circle at 80% 20%, #52e1ff18, transparent 28%), var(--bg);
+  color: #fff;
+}
+.page > header > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.page > header svg {
+  width: 18px;
+}
+.page h1 {
+  max-width: 800px;
+  margin: 18px 0;
+  font-size: clamp(48px, 7vw, 76px);
+  line-height: 1;
+  letter-spacing: -0.065em;
+}
+.page > header p {
+  max-width: 720px;
+  color: #a9b8ca;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.page > header small {
+  display: block;
+  margin-top: 24px;
+  color: #8294aa;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 50px;
+  width: min(1120px, calc(100% - 40px));
+  margin: 50px auto 80px;
+}
+.layout aside {
+  position: sticky;
+  top: 25px;
+  align-self: start;
+  padding: 20px;
+  border: 1px solid #dce4ed;
+  border-radius: 16px;
+  background: #fff;
+}
+.layout aside > strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.layout aside nav {
+  display: grid;
+  gap: 3px;
+  margin-top: 13px;
+}
+.layout aside nav a {
+  padding: 9px;
+  border-radius: 8px;
+  color: #627187;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+}
+.layout aside nav a:hover {
+  background: #ecfafd;
+  color: #087f97;
+}
+.layout aside > div {
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--bg);
+  color: #fff;
+}
+.layout aside > div svg {
+  width: 19px;
+  color: var(--primary);
+}
+.layout aside > div p {
+  font-size: 11px;
+}
+.layout aside > div a {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 900;
+}
+.layout article {
+  padding: 12px 40px 40px;
+  border: 1px solid #dce4ed;
+  border-radius: 20px;
+  background: #fff;
+}
+.layout article section {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 16px;
+  padding: 33px 0;
+  border-bottom: 1px solid #e8edf2;
+  scroll-margin-top: 25px;
+}
+.layout article section:last-child {
+  border: 0;
+}
+.layout article section > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #eafaff;
+  color: #087f97;
+  font-size: 11px;
+  font-weight: 900;
+}
+.layout h2 {
+  margin: 4px 0 14px;
+  font-size: 25px;
+  letter-spacing: -0.035em;
+}
+.layout p,
+.layout li {
+  color: #596a80;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.layout ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px max(24px, calc((100% - 1120px) / 2));
+  background: var(--bg);
+  color: #8496ac;
+  font-size: 11px;
+}
+.footer div {
+  display: flex;
+  gap: 20px;
+}
+.footer a {
+  color: #b5c2d1;
+  text-decoration: none;
+}
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .layout aside {
+    position: static;
+  }
+  .layout article {
+    padding: 8px 22px;
+  }
+  .footer {
+    flex-direction: column;
+  }
+}
+@media (max-width: 520px) {
+  .page > header {
+    padding-top: 50px;
+  }
+  .layout article section {
+    grid-template-columns: 1fr;
+  }
+  .page h1 {
+    font-size: 43px;
+  }
+}

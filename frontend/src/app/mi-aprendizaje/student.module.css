@@ -1,0 +1,300 @@
+.shell {
+  min-height: 100vh;
+  padding-bottom: 70px;
+  background: #f4f7fb;
+  color: #17263b;
+}
+.hero,
+.stats,
+.empty {
+  width: min(1180px, calc(100% - 40px));
+  margin-inline: auto;
+}
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 58px 0 28px;
+}
+.hero > div > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.hero h1 {
+  margin: 10px 0 0;
+  font-size: clamp(38px, 6vw, 60px);
+  letter-spacing: -0.055em;
+}
+.hero p {
+  color: #748296;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 85px;
+  height: 85px;
+  border-radius: 25px;
+  background: var(--bg);
+  color: var(--primary);
+  font-size: 25px;
+  font-weight: 900;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 230px));
+  gap: 14px;
+}
+.stats article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #dfe6ee;
+  border-radius: 15px;
+  background: #fff;
+}
+.stats svg {
+  color: var(--primary-strong);
+}
+.stats div {
+  display: flex;
+  flex-direction: column;
+}
+.stats span {
+  color: #8290a2;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.stats strong {
+  font-size: 21px;
+}
+.empty {
+  display: grid;
+  place-items: center;
+  margin-top: 24px;
+  padding: 70px 24px;
+  border: 1px solid #dfe6ee;
+  border-radius: 22px;
+  background: #fff;
+  text-align: center;
+}
+.empty > div {
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  border-radius: 20px;
+  background: #eafaff;
+  color: var(--primary-strong);
+}
+.empty h2 {
+  margin: 20px 0 8px;
+}
+.empty p {
+  max-width: 500px;
+  color: #748296;
+}
+.empty a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 17px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: #fff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+.loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: #9baabd;
+}
+.myCourses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: min(1180px, calc(100% - 40px));
+  margin: 24px auto;
+}
+.myCourses > article {
+  overflow: hidden;
+  border: 1px solid #dfe6ee;
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.courseCover {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 175px;
+  background: #eaf0f5;
+  color: #718196;
+}
+.courseCover img {
+  object-fit: cover;
+}
+.myCourses article > div:last-child {
+  padding: 18px;
+}
+.myCourses span {
+  color: var(--primary-strong);
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.myCourses h2 {
+  margin: 8px 0;
+  font-size: 19px;
+}
+.myCourses p {
+  min-height: 40px;
+  color: #748296;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.myCourses a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 11px;
+  border-radius: 9px;
+  background: var(--bg);
+  color: #fff;
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: 900;
+}
+.myCourses a svg {
+  width: 14px;
+}
+.courseProgress {
+  height: 6px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #e4e9ef;
+}
+.courseProgress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-strong);
+}
+.myCourses article small {
+  display: block;
+  margin-top: 6px;
+  color: #718095;
+  font-size: 9px;
+}
+@media (max-width: 800px) {
+  .myCourses {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.certificates {
+  width: min(1180px, calc(100% - 40px));
+  margin: 35px auto;
+}
+.certificates > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.certificates > header > svg {
+  width: 34px;
+  height: 34px;
+  color: var(--primary-strong);
+}
+.certificates h2 {
+  margin: 0;
+}
+.certificates header p {
+  margin: 4px 0;
+  color: #748296;
+  font-size: 10px;
+}
+.certificates > div {
+  display: grid;
+  gap: 10px;
+  margin-top: 15px;
+}
+.certificates article {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #dfe6ee;
+  border-radius: 13px;
+  background: #fff;
+}
+.certificates article > svg {
+  width: 30px;
+  height: 30px;
+  color: #079bb9;
+}
+.certificates article span {
+  font-size: 8px;
+  color: #079bb9;
+  text-transform: uppercase;
+}
+.certificates h3 {
+  margin: 4px 0;
+  font-size: 14px;
+}
+.certificates article small {
+  color: #8290a2;
+  font-size: 8px;
+}
+.certificates article a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #07111f;
+  color: #fff;
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: 900;
+}
+.certificates article a:last-child {
+  background: #e9faff;
+  color: #17667a;
+}
+@media (max-width: 600px) {
+  .certificates article {
+    grid-template-columns: 35px 1fr;
+  }
+  .certificates article a {
+    justify-content: center;
+  }
+}
+@media (max-width: 600px) {
+  .hero {
+    align-items: flex-start;
+  }
+  .avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 17px;
+  }
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .myCourses {
+    grid-template-columns: 1fr;
+  }
+}

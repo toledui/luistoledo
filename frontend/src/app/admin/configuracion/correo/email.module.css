@@ -1,0 +1,243 @@
+.page {
+  max-width: 1280px;
+  margin: auto;
+}
+.heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+}
+.heading span {
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.heading h1 {
+  margin: 9px 0 0;
+  font-size: clamp(34px, 5vw, 52px);
+  letter-spacing: -0.05em;
+}
+.heading p {
+  color: #748296;
+}
+.heading button,
+.test button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--bg);
+  color: #fff;
+  font-weight: 800;
+}
+.status {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 28px;
+}
+.status article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid #dfe6ee;
+  border-radius: 15px;
+  background: #fff;
+}
+.status article > svg {
+  color: var(--primary-strong);
+}
+.status div {
+  display: flex;
+  flex-direction: column;
+}
+.status span {
+  color: #8794a5;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.status strong {
+  font-size: 14px;
+}
+.status .danger svg {
+  color: #d88a25;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 18px;
+  margin-top: 18px;
+}
+.form {
+  display: grid;
+  gap: 16px;
+}
+.form section,
+.test {
+  padding: 24px;
+  border: 1px solid #dfe6ee;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(17, 37, 65, 0.04);
+}
+.title {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #edf1f5;
+}
+.title > svg {
+  color: var(--primary-strong);
+}
+.title h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.title p {
+  margin: 5px 0 0;
+  color: #8390a1;
+  font-size: 11px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+.grid .full {
+  grid-column: 1/-1;
+}
+.form label,
+.test label {
+  display: grid;
+  gap: 8px;
+  color: #536277;
+  font-size: 11px;
+  font-weight: 800;
+}
+.form input,
+.form select,
+.test input {
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid #dce4ed;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+.grid .check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.check input {
+  min-height: 0;
+}
+.secrets {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 13px;
+  background: #f2fbfd !important;
+}
+.secrets > svg {
+  color: var(--primary-strong);
+}
+.secrets strong {
+  font-size: 13px;
+}
+.secrets p {
+  margin: 4px 0 0;
+  color: #748296;
+  font-size: 11px;
+}
+.message {
+  padding: 14px;
+  border-radius: 11px;
+  background: #ecfbef;
+  color: #24743a;
+  font-size: 12px;
+  font-weight: 800;
+}
+.configured {
+  color: #27833f;
+  font-size: 9px;
+  font-weight: 800;
+}
+.test {
+  position: sticky;
+  top: 94px;
+  height: max-content;
+}
+.test label {
+  margin-top: 20px;
+}
+.test button {
+  width: 100%;
+  margin-top: 13px;
+  background: var(--primary);
+  color: var(--bg);
+}
+.test small {
+  display: block;
+  margin-top: 16px;
+  color: #758397;
+}
+.error {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #fff1ef;
+  color: #a74233;
+  font-size: 11px;
+}
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #748296;
+}
+.spin,
+.loading svg {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 1000px) {
+  .status {
+    grid-template-columns: 1fr 1fr;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .test {
+    position: static;
+  }
+}
+@media (max-width: 650px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .heading button {
+    width: 100%;
+  }
+  .status,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .grid .full {
+    grid-column: auto;
+  }
+}

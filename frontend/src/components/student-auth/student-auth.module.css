@@ -1,0 +1,137 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(82, 225, 255, 0.13),
+      transparent 30%
+    ),
+    var(--bg);
+  color: #fff;
+}
+.card {
+  width: min(100%, 520px);
+  padding: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 27px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #fff;
+  text-decoration: none;
+}
+.brand span {
+  display: grid;
+  place-items: center;
+  width: 41px;
+  height: 41px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--bg);
+  font-weight: 900;
+}
+.card header {
+  margin: 40px 0 25px;
+}
+.card header small {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.card h1 {
+  margin: 9px 0;
+  font-size: 39px;
+  letter-spacing: -0.05em;
+}
+.card header p,
+.card footer {
+  color: #91a4ba;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.form {
+  display: grid;
+  gap: 15px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form label {
+  display: grid;
+  gap: 7px;
+  color: #bbc6d3;
+  font-size: 11px;
+  font-weight: 800;
+}
+.form input {
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 11px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font: inherit;
+}
+.form button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--primary);
+  color: var(--bg);
+  font-weight: 900;
+}
+.form button:disabled {
+  opacity: 0.55;
+}
+.message {
+  padding: 13px;
+  border-radius: 10px;
+  background: rgba(82, 225, 255, 0.1);
+  color: #9ceeff;
+  font-size: 12px;
+}
+.error {
+  padding: 13px;
+  border-radius: 10px;
+  background: rgba(255, 100, 100, 0.1);
+  color: #ffb1b1;
+  font-size: 12px;
+}
+.card footer {
+  margin-top: 22px;
+  text-align: center;
+}
+.card footer a {
+  color: var(--primary);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 520px) {
+  .shell {
+    padding: 14px;
+  }
+  .card {
+    padding: 28px 20px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

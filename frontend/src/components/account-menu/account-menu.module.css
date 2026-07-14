@@ -1,0 +1,18 @@
+.account { position:relative; z-index:30; }
+.placeholder { width:150px; height:42px; }
+.guest { display:flex; align-items:center; gap:10px; }
+.guest a { padding:10px 13px; border-radius:9px; color:#d6e1ed; text-decoration:none; font-size:12px; font-weight:800; }
+.guest a:last-child { background:var(--primary); color:var(--bg); }
+.trigger { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:9px; min-width:155px; padding:5px 8px; border:1px solid #ffffff25; border-radius:11px; background:#ffffff0c; color:#fff; text-align:left; }
+.trigger > span, .menu header > span { display:grid; place-items:center; width:32px; height:32px; border-radius:9px; background:var(--primary); color:var(--bg); font-size:11px; font-weight:900; }
+.trigger div, .trigger strong, .trigger small, .menu header div, .menu header strong, .menu header small { display:block; }
+.trigger strong { font-size:11px; }.trigger small { color:#91a2b6; font-size:8px; }.trigger > svg { width:14px; }
+.menu { position:absolute; top:calc(100% + 10px); right:0; width:285px; overflow:hidden; border:1px solid #dce4ec; border-radius:14px; background:#fff; color:#17263b; box-shadow:0 22px 60px #07111f33; }
+.menu header { display:flex; align-items:center; gap:10px; padding:16px; border-bottom:1px solid #e8edf2; }
+.menu header strong { font-size:12px; }.menu header small { margin-top:3px; color:#7c899a; font-size:9px; overflow:hidden; text-overflow:ellipsis; }
+.account .menu nav { display:flex; flex-direction:column; align-items:stretch; gap:2px; width:100%; margin:0; padding:8px; }
+.menu nav a, .logout { display:flex; flex:0 0 auto; align-items:center; gap:9px; width:100%; min-width:0; padding:10px; border:0; border-radius:8px; background:transparent; color:#526176; text-decoration:none; font-size:11px; font-weight:800; white-space:normal; }
+.menu nav a:hover { background:#eafaff; color:#087f97; }.menu svg { width:17px; }
+.logout { width:100%; padding:13px 18px; border-top:1px solid #e8edf2; border-radius:0; color:#a33c2d; }
+.mobile { width:100%; }.mobile .trigger { width:100%; }.mobile .menu { position:static; width:100%; margin-top:8px; }
+@media(max-width:600px){.guest{width:100%;display:grid}.guest a{text-align:center}}

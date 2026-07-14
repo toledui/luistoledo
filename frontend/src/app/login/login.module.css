@@ -1,0 +1,149 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(82, 225, 255, 0.12),
+      transparent 30%
+    ),
+    var(--bg);
+  color: #fff;
+}
+.card {
+  width: min(100%, 480px);
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  text-decoration: none;
+}
+.brand span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--primary);
+  color: var(--bg);
+  font-weight: 900;
+}
+.copy {
+  margin: 46px 0 30px;
+}
+.copy > span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.copy h1 {
+  margin: 10px 0;
+  font-size: 42px;
+  letter-spacing: -0.05em;
+}
+.copy p {
+  color: #91a4ba;
+}
+.form {
+  display: grid;
+  gap: 18px;
+}
+.form label {
+  display: grid;
+  gap: 8px;
+  color: #b9c5d3;
+  font-size: 12px;
+  font-weight: 800;
+}
+.form label > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.form input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+}
+.form button {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--bg);
+  font-weight: 900;
+}
+.form button:disabled {
+  opacity: 0.6;
+}
+.forgotLink {
+  justify-self: end;
+  margin-top: -8px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.forgotLink:hover {
+  text-decoration: underline;
+}
+.registerPrompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #91a4ba;
+  font-size: 12px;
+}
+.registerPrompt a {
+  color: var(--primary);
+  font-weight: 900;
+  text-decoration: none;
+}
+.error {
+  margin: 0;
+  color: #ff9b9b;
+  font-size: 13px;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sessionCheck {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #718095;
+  font-size: 12px;
+}
