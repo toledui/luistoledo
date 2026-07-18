@@ -280,16 +280,18 @@ export function CoursePublicView({
               <iframe
                 src={course.presentationVideoUrl}
                 title={`Presentación de ${course.title}`}
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                 allowFullScreen
+                loading="eager"
                 referrerPolicy="strict-origin-when-cross-origin"
               />
             ) : lesson?.type === "VIDEO_EMBED" && lesson.media ? (
               <iframe
                 src={lesson.media.url}
                 title={lesson.title}
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                 allowFullScreen
+                loading="eager"
               />
             ) : lesson?.type === "DOCUMENT" && lesson.media ? (
               <div className={styles.resource}>

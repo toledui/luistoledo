@@ -444,8 +444,10 @@ function EmbeddedVideo({
       ref={iframeRef}
       src={media.url}
       title={title}
-      allow="autoplay; fullscreen; picture-in-picture"
+      allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
       allowFullScreen
+      loading="eager"
+      referrerPolicy="strict-origin-when-cross-origin"
     />
   );
 }
