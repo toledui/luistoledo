@@ -82,7 +82,8 @@
   font-weight: 900;
 }
 .expandSidebar svg,
-.collapseSidebar svg {
+.collapseSidebar svg,
+.mobileCloseSidebar svg {
   width: 17px;
 }
 .content {
@@ -193,7 +194,8 @@
   justify-content: space-between;
   gap: 10px;
 }
-.collapseSidebar {
+.collapseSidebar,
+.mobileCloseSidebar {
   display: grid;
   place-items: center;
   padding: 7px;
@@ -201,6 +203,9 @@
   border-radius: 7px;
   background: #edf3f7;
   color: #526176;
+}
+.mobileCloseSidebar {
+  display: none;
 }
 .sidebar > header span,
 .sidebar > header strong {
@@ -314,6 +319,9 @@
   .collapseSidebar,
   .expandSidebar {
     display: none;
+  }
+  .mobileCloseSidebar {
+    display: grid;
   }
   .sidebar.sidebarCollapsed {
     display: none;

@@ -205,8 +205,10 @@ export function LearningPlayer({
           <span>{percentage}% completado</span>
         </div>
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Abrir temario"
+          onClick={() => setMenuOpen((current) => !current)}
+          aria-label={menuOpen ? "Cerrar temario" : "Abrir temario"}
+          aria-expanded={menuOpen}
+          aria-controls="course-content-sidebar"
         >
           {menuOpen ? <X /> : <Menu />}
         </button>
@@ -296,6 +298,7 @@ export function LearningPlayer({
           </nav>
         </section>
         <aside
+          id="course-content-sidebar"
           className={`${styles.sidebar} ${menuOpen ? styles.open : ""} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}
         >
           <header>
@@ -311,6 +314,14 @@ export function LearningPlayer({
               title="Ocultar contenido del curso"
             >
               <PanelRightClose />
+            </button>
+            <button
+              className={styles.mobileCloseSidebar}
+              onClick={() => setMenuOpen(false)}
+              aria-label="Cerrar contenido del curso"
+              title="Cerrar contenido del curso"
+            >
+              <X />
             </button>
           </header>
           {course.sections.map((section, sectionIndex) => (
