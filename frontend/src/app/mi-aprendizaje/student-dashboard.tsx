@@ -16,7 +16,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "./student.module.css";
-import { StudentNavbar } from "@/components/student-navbar/student-navbar";
 
 type User = {
   email: string;
@@ -74,7 +73,6 @@ export function StudentDashboard() {
   if (!user) return null;
   return (
     <main className={styles.shell}>
-      <StudentNavbar />
       <section className={styles.hero}>
         <div>
           <span>

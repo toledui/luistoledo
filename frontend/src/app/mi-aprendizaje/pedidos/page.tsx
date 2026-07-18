@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import styles from "../../commerce.module.css";
-import { StudentNavbar } from "@/components/student-navbar/student-navbar";
 type Order = {
   id: string;
   number: string;
@@ -75,7 +74,6 @@ function OrdersPageContent() {
     );
   return (
     <>
-      <StudentNavbar />
       <main className={styles.page}>
       <div className={styles.orders}>
         <div className={styles.title}>

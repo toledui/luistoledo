@@ -34,6 +34,9 @@ html {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
   font-family: var(--body-font), sans-serif;
   color: var(--text);
@@ -1133,60 +1136,15 @@ svg {
 .portrait-placeholder {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  align-content: center;
   border: 1px solid #dfe7f1;
   border-radius: 30px;
-  background:
-    radial-gradient(
-      circle at 50% 36%,
-      rgba(82, 225, 255, 0.18),
-      transparent 25%
-    ),
-    linear-gradient(160deg, #e9f2fb, #cfdce9);
+  background: #e9f2fb;
   overflow: hidden;
 }
 
-.portrait-placeholder::before {
-  content: "";
-  position: absolute;
-  width: 62%;
-  height: 62%;
-  left: 19%;
-  bottom: -18%;
-  border-radius: 48% 48% 20% 20%;
-  background: linear-gradient(180deg, #6e7f91, #2d3f54);
-}
-
-.portrait-placeholder span {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 118px;
-  height: 118px;
-  border-radius: 50%;
-  color: white;
-  background: linear-gradient(135deg, #183452, #0d1a2b);
-  font-family: var(--heading-font), sans-serif;
-  font-size: 34px;
-  font-weight: 700;
-  box-shadow: 0 20px 50px rgba(13, 26, 43, 0.2);
-}
-
-.portrait-placeholder small {
-  position: absolute;
-  left: 22px;
-  bottom: 20px;
-  z-index: 3;
-  padding: 8px 10px;
-  border-radius: 9px;
-  color: #314356;
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 9px;
-  font-weight: 700;
-  backdrop-filter: blur(8px);
+.portrait-photo {
+  object-fit: cover;
+  object-position: center;
 }
 
 .experience-stamp {
@@ -1500,8 +1458,13 @@ svg {
 }
 
 .site-footer {
+  margin-top: auto;
   color: white;
   background: color-mix(in srgb, var(--bg) 86%, black);
+}
+
+.footer-logo {
+  text-decoration: none;
 }
 
 .footer-grid {
@@ -1531,16 +1494,15 @@ svg {
   font-size: 13px;
 }
 
-.footer-grid button:not(.brand) {
+.footer-grid > div:not(.footer-brand) > a,
+.footer-grid > div:not(.footer-brand) > span {
   padding: 0;
-  border: 0;
   color: #7f91a7;
-  background: transparent;
   font-size: 12px;
+  text-decoration: none;
 }
 
-.footer-grid button:not(.brand):hover,
-.footer-bottom button:hover,
+.footer-grid > div:not(.footer-brand) > a:hover,
 .footer-bottom a:hover {
   color: white;
 }
@@ -1560,7 +1522,6 @@ svg {
   gap: 20px;
 }
 
-.footer-bottom button,
 .footer-bottom a {
   padding: 0;
   border: 0;

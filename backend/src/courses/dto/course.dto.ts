@@ -25,6 +25,10 @@ export class UpdateCourseDto {
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() objectives?: string;
   @IsOptional() @IsString() requirements?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  presentationVideoUrl?: string | null;
   @IsOptional() @IsEnum(CourseStatus) status?: CourseStatus;
   @IsOptional() @IsEnum(CourseLevel) level?: CourseLevel;
   @IsOptional() @IsString() @MaxLength(12) language?: string;

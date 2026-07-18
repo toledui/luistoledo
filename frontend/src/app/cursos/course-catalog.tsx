@@ -13,7 +13,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import styles from "./catalog.module.css";
-import { PublicNavbar } from "@/components/public-navbar/public-navbar";
 type Course = {
   id: string;
   title: string;
@@ -60,7 +59,6 @@ export function CourseCatalog() {
   }, [load]);
   return (
     <>
-      <PublicNavbar />
       <main className={styles.page}>
       <header>
         <section>

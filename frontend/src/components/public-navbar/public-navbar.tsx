@@ -19,33 +19,33 @@ export function PublicNavbar() {
           </span>
         </Link>
         <nav>
-          <Link href="/cursos">Cursos</Link>
-          <Link href="/#metodo">Metodología</Link>
-          <Link href="/#sobre-mi">Sobre mí</Link>
-          <Link href="/#faq">Preguntas</Link>
-          <Link href="/contacto">Contacto</Link>
+          <Link href="/cursos" onClick={() => setOpen(false)}>Cursos</Link>
+          <Link href="/#metodo" onClick={() => setOpen(false)}>Metodología</Link>
+          <Link href="/#sobre-mi" onClick={() => setOpen(false)}>Sobre mí</Link>
+          <Link href="/#faq" onClick={() => setOpen(false)}>Preguntas</Link>
+          <Link href="/contacto" onClick={() => setOpen(false)}>Contacto</Link>
         </nav>
         <div className={styles.actions}>
           <CartButton />
-          <AccountMenu />
+          <AccountMenu responsive />
         </div>
         <button
           className={styles.menuButton}
-          onClick={() => setOpen(!open)}
+          onClick={() => setOpen((current) => !current)}
           aria-label="Abrir menú"
+          aria-expanded={open}
+          aria-controls="mobile-navigation"
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className={styles.mobile}>
-          <Link href="/cursos">Cursos</Link>
-          <Link href="/#metodo">Metodología</Link>
-          <Link href="/#sobre-mi">Sobre mí</Link>
-          <Link href="/#faq">Preguntas</Link>
-          <Link href="/contacto">Contacto</Link>
-          <CartButton />
-          <AccountMenu mobile />
+        <div className={styles.mobile} id="mobile-navigation">
+          <Link href="/cursos" onClick={() => setOpen(false)}>Cursos</Link>
+          <Link href="/#metodo" onClick={() => setOpen(false)}>Metodología</Link>
+          <Link href="/#sobre-mi" onClick={() => setOpen(false)}>Sobre mí</Link>
+          <Link href="/#faq" onClick={() => setOpen(false)}>Preguntas</Link>
+          <Link href="/contacto" onClick={() => setOpen(false)}>Contacto</Link>
         </div>
       )}
     </header>

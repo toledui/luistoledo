@@ -64,6 +64,26 @@ export class CoursesService {
       candidate = `${base}-${index++}`;
     return candidate;
   }
+  private screenPalUrl(value: string | null) {
+    if (!value?.trim()) return null;
+    let url: URL;
+    try {
+      url = new URL(value.trim());
+    } catch {
+      throw new BadRequestException(
+        'El video de presentación debe contener una URL válida',
+      );
+    }
+    const host = url.hostname.toLowerCase();
+    if (
+      url.protocol !== 'https:' ||
+      (host !== 'screenpal.com' && !host.endsWith('.screenpal.com'))
+    )
+      throw new BadRequestException(
+        'El video de presentación debe ser un embed HTTPS de ScreenPal',
+      );
+    return url.toString();
+  }
   list() {
     return this.prisma.course.findMany({
       orderBy: { updatedAt: 'desc' },
@@ -221,6 +241,9 @@ export class CoursesService {
     await this.get(id);
     const data: Prisma.CourseUpdateInput = {
       ...dto,
+      ...(dto.presentationVideoUrl !== undefined
+        ? { presentationVideoUrl: this.screenPalUrl(dto.presentationVideoUrl) }
+        : {}),
       ...(dto.slug ? { slug: await this.uniqueSlug(dto.slug, id) } : {}),
       ...(dto.status === CourseStatus.PUBLISHED
         ? { publishedAt: new Date() }
@@ -251,6 +274,7 @@ export class CoursesService {
         description: source.description,
         objectives: source.objectives,
         requirements: source.requirements,
+        presentationVideoUrl: source.presentationVideoUrl,
         level: source.level,
         language: source.language,
         price: source.price,

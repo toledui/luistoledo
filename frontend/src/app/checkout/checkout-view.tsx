@@ -17,7 +17,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "../commerce.module.css";
-import { PublicNavbar } from "@/components/public-navbar/public-navbar";
 type Methods = { stripeEnabled: boolean; bankTransferEnabled: boolean };
 type User = { email: string; firstName: string; lastName: string };
 type Result = { order: { id: string }; checkoutUrl?: string };
@@ -207,7 +206,6 @@ export function CheckoutView() {
     );
   return (
     <>
-      <PublicNavbar />
       <main className={styles.page}>
         <div className={styles.checkout}>
           <section>

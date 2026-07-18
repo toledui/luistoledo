@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowRight,
   BriefcaseBusiness,
   ChevronDown,
   Code2,
   GraduationCap,
-  Menu,
   MousePointerClick,
   Play,
   Rocket,
@@ -18,13 +16,8 @@ import {
   Target,
   TrendingUp,
   Users,
-  X,
   Zap,
 } from "lucide-react";
-import { AccountMenu } from "./account-menu/account-menu";
-import { CartButton } from "./cart/cart-context";
-import { BrandLogo } from "./brand-logo";
-import { PublicNavbar } from "./public-navbar/public-navbar";
 import { apiFetch } from "../lib/api";
 import Image from "next/image";
 
@@ -95,14 +88,7 @@ const faqs = [
 function App() {
   const router = useRouter();
   const [featuredCourses, setFeaturedCourses] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(0);
-
-  useEffect(() => {
-    const closeMenu = () => setMenuOpen(false);
-    window.addEventListener("resize", closeMenu);
-    return () => window.removeEventListener("resize", closeMenu);
-  }, []);
 
   useEffect(() => {
     apiFetch("/courses?limit=12")
@@ -111,65 +97,11 @@ function App() {
   }, []);
 
   const goTo = (id) => {
-    setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
     <div className="site-shell">
-      <PublicNavbar />
-      {false && (
-        <header className="site-header">
-          <div className="container nav-wrap">
-            <button
-              className="brand"
-              onClick={() => goTo("inicio")}
-              aria-label="Ir al inicio"
-            >
-              <span className="brand-mark brand-mark-logo">
-                <BrandLogo dark />
-              </span>
-              <span className="brand-copy">
-                <strong>Luis Toledo</strong>
-                <small>Academy</small>
-              </span>
-            </button>
-
-            <nav className="desktop-nav" aria-label="Navegación principal">
-              <button onClick={() => router.push("/cursos")}>Cursos</button>
-              <button onClick={() => goTo("metodo")}>Metodología</button>
-              <button onClick={() => goTo("sobre-mi")}>Sobre mí</button>
-              <button onClick={() => goTo("faq")}>Preguntas</button>
-            </nav>
-
-            <div className="nav-actions">
-              <CartButton />
-              <AccountMenu />
-            </div>
-
-            <button
-              className="menu-button"
-              onClick={() => setMenuOpen((value) => !value)}
-              aria-label="Abrir menú"
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
-
-          {menuOpen && (
-            <div className="mobile-menu">
-              <CartButton />
-              <button onClick={() => router.push("/cursos")}>Cursos</button>
-              <button onClick={() => goTo("metodo")}>Metodología</button>
-              <button onClick={() => goTo("sobre-mi")}>Sobre mí</button>
-              <button onClick={() => goTo("faq")}>Preguntas</button>
-              <AccountMenu mobile />
-            </div>
-          )}
-        </header>
-      )}
-
       <main>
         <section className="hero section" id="inicio">
           <div className="hero-glow hero-glow-one" />
@@ -451,8 +383,13 @@ function App() {
               <div className="portrait-frame">
                 <div className="portrait-backdrop" />
                 <div className="portrait-placeholder">
-                  <span>LT</span>
-                  <small>Fotografía de Luis Toledo</small>
+                  <Image
+                    src="/images/luistoledofoto.jpg"
+                    alt="Luis Toledo"
+                    fill
+                    sizes="(max-width: 900px) calc(100vw - 58px), 470px"
+                    className="portrait-photo"
+                  />
                 </div>
                 <div className="experience-stamp">
                   <strong>10+</strong>
@@ -618,59 +555,6 @@ function App() {
         </section>
       </main>
 
-      <footer className="site-footer">
-        <div className="container footer-grid">
-          <div className="footer-brand">
-            <button
-              className="brand footer-logo"
-              onClick={() => goTo("inicio")}
-            >
-              <span className="brand-mark brand-mark-logo">
-                <BrandLogo dark />
-              </span>
-              <span className="brand-copy">
-                <strong>Luis Toledo</strong>
-                <small>Academy</small>
-              </span>
-            </button>
-            <p>
-              Formación práctica en desarrollo web, marketing digital y ventas
-              B2B, respaldada por la experiencia de THagencia.
-            </p>
-          </div>
-
-          <div>
-            <h3>Explorar</h3>
-            <button onClick={() => router.push("/cursos")}>Cursos</button>
-            <button onClick={() => goTo("metodo")}>Metodología</button>
-            <button onClick={() => goTo("sobre-mi")}>Sobre Luis</button>
-          </div>
-
-          <div>
-            <h3>Recursos</h3>
-            <button>Blog</button>
-            <button>Guías gratuitas</button>
-            <button>Preguntas frecuentes</button>
-          </div>
-
-          <div>
-            <h3>Contacto</h3>
-            <button>THagencia</button>
-            <button>Soporte</button>
-            <button>LinkedIn</button>
-          </div>
-        </div>
-
-        <div className="container footer-bottom">
-          <span>
-            © 2026 Luis Toledo · THagencia. Todos los derechos reservados.
-          </span>
-          <div>
-            <Link href="/privacidad">Privacidad</Link>
-            <Link href="/terminos">Términos</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./course.module.css";
 import { useCart } from "@/components/cart/cart-context";
-import { PublicNavbar } from "@/components/public-navbar/public-navbar";
 type Media = { url: string; name: string; kind: string; provider?: string };
 type Lesson = {
   id: string;
@@ -46,6 +45,7 @@ type Course = {
   description?: string;
   objectives?: string;
   requirements?: string;
+  presentationVideoUrl?: string;
   status: string;
   level: string;
   price: string;
@@ -60,6 +60,7 @@ type Course = {
   startLessonId?: string;
   progressPercentage?: number;
 };
+const PRESENTATION_VIDEO = "__course_presentation__";
 export function CoursePublicView({
   slug,
   adminPreview,
@@ -87,6 +88,10 @@ export function CoursePublicView({
     load()
       .then((value) => {
         setCourse(value);
+        if (value.presentationVideoUrl) {
+          setSelected(PRESENTATION_VIDEO);
+          return;
+        }
         const first = value.sections
           .flatMap((section) => section.lessons)
           .find((lesson) => adminPreview || lesson.isPreview);
@@ -103,6 +108,8 @@ export function CoursePublicView({
     [course],
   );
   const lesson = lessons.find((item) => item.id === selected);
+  const presentationSelected =
+    selected === PRESENTATION_VIDEO && Boolean(course?.presentationVideoUrl);
   async function enroll() {
     if (!course) return;
     setEnrolling(true);
@@ -160,7 +167,6 @@ export function CoursePublicView({
     );
   return (
     <main className={styles.page}>
-      <PublicNavbar />
       {course.adminPreview && (
         <div className={styles.previewBar}>
           <span>
@@ -270,7 +276,15 @@ export function CoursePublicView({
       <div className={styles.learning}>
         <section className={styles.player}>
           <div className={styles.screen}>
-            {lesson?.type === "VIDEO_EMBED" && lesson.media ? (
+            {presentationSelected && course.presentationVideoUrl ? (
+              <iframe
+                src={course.presentationVideoUrl}
+                title={`Presentación de ${course.title}`}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            ) : lesson?.type === "VIDEO_EMBED" && lesson.media ? (
               <iframe
                 src={lesson.media.url}
                 title={lesson.title}
@@ -302,12 +316,17 @@ export function CoursePublicView({
               </div>
             )}
           </div>
-          {lesson && (
+          {presentationSelected ? (
+            <div className={styles.lessonHeading}>
+              <span>PRESENTACIÓN</span>
+              <h2>Conoce todo lo que incluye este curso</h2>
+            </div>
+          ) : lesson ? (
             <div className={styles.lessonHeading}>
               <span>{lesson.type.replace("_EMBED", "")}</span>
               <h2>{lesson.title}</h2>
             </div>
-          )}
+          ) : null}
         </section>
         <aside className={styles.curriculum}>
           <header>
@@ -316,6 +335,25 @@ export function CoursePublicView({
               {course.sections.length} módulos · {lessons.length} lecciones
             </strong>
           </header>
+          {course.presentationVideoUrl && (
+            <section>
+              <h3>
+                <i>▶</i>
+                Presentación
+              </h3>
+              <button
+                className={presentationSelected ? styles.active : ""}
+                onClick={() => setSelected(PRESENTATION_VIDEO)}
+              >
+                <Film />
+                <span>
+                  <strong>Conoce el curso</strong>
+                  <small>Qué incluye y cómo funciona</small>
+                </span>
+                <CheckCircle2 />
+              </button>
+            </section>
+          )}
           {course.sections.map((section, index) => (
             <section key={section.id}>
               <h3>

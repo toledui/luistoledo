@@ -57,6 +57,7 @@ type Course = {
   description?: string;
   objectives?: string;
   requirements?: string;
+  presentationVideoUrl?: string;
   status: string;
   level: string;
   language: string;
@@ -152,6 +153,9 @@ export function CourseEditor({ id }: { id: string }) {
         description: course.description || "",
         objectives: course.objectives || "",
         requirements: course.requirements || "",
+        presentationVideoUrl: course.presentationVideoUrl
+          ? screenPalEmbedUrl(course.presentationVideoUrl)
+          : null,
         status: course.status,
         level: course.level,
         language: course.language,
@@ -287,6 +291,24 @@ export function CourseEditor({ id }: { id: string }) {
     const source = document.querySelector("iframe")?.getAttribute("src");
     if (!source) throw new Error("El código debe contener un iframe con src.");
     return source.startsWith("//") ? `https:${source}` : source;
+  }
+  function screenPalEmbedUrl(value: string) {
+    const source = embedUrl(value);
+    let url: URL;
+    try {
+      url = new URL(source);
+    } catch {
+      throw new Error("El iframe de presentación debe contener una URL válida.");
+    }
+    const host = url.hostname.toLowerCase();
+    if (
+      url.protocol !== "https:" ||
+      (host !== "screenpal.com" && !host.endsWith(".screenpal.com"))
+    )
+      throw new Error(
+        "El video de presentación debe ser un embed HTTPS de ScreenPal.",
+      );
+    return url.toString();
   }
   async function registerEmbed(lesson: Lesson) {
     setBusyLesson(lesson.id);
@@ -461,6 +483,27 @@ export function CourseEditor({ id }: { id: string }) {
                     value={course.description || ""}
                     onChange={(e) => change("description", e.target.value)}
                   />
+                </label>
+              </div>
+            </section>
+            <section>
+              <h2>Video de presentación</h2>
+              <div className={styles.formGrid}>
+                <label className={styles.full}>
+                  Embed de ScreenPal
+                  <textarea
+                    rows={5}
+                    value={course.presentationVideoUrl || ""}
+                    onChange={(e) =>
+                      change("presentationVideoUrl", e.target.value)
+                    }
+                    placeholder={'Pega el HTML: <iframe src="https://screenpal.com/…"></iframe>'}
+                  />
+                  <small>
+                    Este video explicará qué incluye el curso y aparecerá por
+                    defecto en la página pública. También puedes pegar
+                    directamente la URL HTTPS del reproductor de ScreenPal.
+                  </small>
                 </label>
               </div>
             </section>

@@ -468,6 +468,7 @@ model Course {
   description      String?         @db.LongText
   objectives       String?         @db.LongText
   requirements     String?         @db.LongText
+  presentationVideoUrl String?     @db.VarChar(2048)
   status           CourseStatus    @default(DRAFT)
   level            CourseLevel     @default(ALL_LEVELS)
   language         String          @default("es-MX") @db.VarChar(12)

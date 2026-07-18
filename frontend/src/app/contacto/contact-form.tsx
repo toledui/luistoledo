@@ -1,5 +1,4 @@
 "use client";
-import { PublicNavbar } from "@/components/public-navbar/public-navbar";
 import { apiFetch } from "@/lib/api";
 import {
   CheckCircle2,
@@ -92,7 +91,6 @@ export function ContactForm() {
   }
   return (
     <>
-      <PublicNavbar />
       {settings?.turnstileEnabled && (
         <Script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"

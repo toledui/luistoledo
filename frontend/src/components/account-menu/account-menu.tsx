@@ -23,7 +23,13 @@ type SessionUser = {
   roles: string[];
 };
 
-export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
+export function AccountMenu({
+  mobile = false,
+  responsive = false,
+}: {
+  mobile?: boolean;
+  responsive?: boolean;
+}) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [checked, setChecked] = useState(false);
   const [open, setOpen] = useState(false);
@@ -53,12 +59,29 @@ export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
     router.refresh();
   }
 
-  if (!checked) return <div className={styles.placeholder} />;
+  if (!checked)
+    return (
+      <div
+        className={`${styles.placeholder} ${responsive ? styles.responsive : ""}`}
+      />
+    );
   if (!user)
     return (
-      <div className={`${styles.guest} ${mobile ? styles.mobile : ""}`}>
-        <Link href="/login">Iniciar sesión</Link>
-        <Link href="/registro">Crear cuenta</Link>
+      <div
+        className={`${styles.guest} ${mobile ? styles.mobile : ""} ${responsive ? styles.responsive : ""}`}
+      >
+        <Link href="/login" className={styles.guestLogin}>Iniciar sesión</Link>
+        <Link href="/registro" className={styles.guestRegister}>Crear cuenta</Link>
+        {responsive && (
+          <Link
+            href="/login"
+            className={styles.compactGuestLink}
+            aria-label="Iniciar sesión"
+            title="Iniciar sesión"
+          >
+            <UserRound />
+          </Link>
+        )}
       </div>
     );
 
@@ -68,8 +91,16 @@ export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
   );
 
   return (
-    <div className={`${styles.account} ${mobile ? styles.mobile : ""}`} ref={root}>
-      <button className={styles.trigger} onClick={() => setOpen(!open)} aria-expanded={open}>
+    <div
+      className={`${styles.account} ${mobile ? styles.mobile : ""} ${responsive ? styles.responsive : ""}`}
+      ref={root}
+    >
+      <button
+        className={styles.trigger}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label={responsive ? `Cuenta de ${user.firstName}` : undefined}
+      >
         <span>{initials.toUpperCase()}</span>
         <div><strong>{user.firstName}</strong><small>Mi cuenta</small></div>
         <ChevronDown />

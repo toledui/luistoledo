@@ -315,6 +315,12 @@
   font-size: 12px;
   font-weight: 800;
 }
+.formGrid label > small {
+  color: #78879a;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.55;
+}
 .formGrid .full {
   grid-column: 1/-1;
 }

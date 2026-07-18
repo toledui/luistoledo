@@ -1,8 +1,10 @@
 .account { position:relative; z-index:30; }
 .placeholder { width:150px; height:42px; }
+.placeholder.responsive { width:150px; }
 .guest { display:flex; align-items:center; gap:10px; }
 .guest a { padding:10px 13px; border-radius:9px; color:#d6e1ed; text-decoration:none; font-size:12px; font-weight:800; }
-.guest a:last-child { background:var(--primary); color:var(--bg); }
+.guest .guestRegister { background:var(--primary); color:var(--bg); }
+.guest .compactGuestLink { display:none; }
 .trigger { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:9px; min-width:155px; padding:5px 8px; border:1px solid #ffffff25; border-radius:11px; background:#ffffff0c; color:#fff; text-align:left; }
 .trigger > span, .menu header > span { display:grid; place-items:center; width:32px; height:32px; border-radius:9px; background:var(--primary); color:var(--bg); font-size:11px; font-weight:900; }
 .trigger div, .trigger strong, .trigger small, .menu header div, .menu header strong, .menu header small { display:block; }
@@ -15,4 +17,21 @@
 .menu nav a:hover { background:#eafaff; color:#087f97; }.menu svg { width:17px; }
 .logout { width:100%; padding:13px 18px; border-top:1px solid #e8edf2; border-radius:0; color:#a33c2d; }
 .mobile { width:100%; }.mobile .trigger { width:100%; }.mobile .menu { position:static; width:100%; margin-top:8px; }
-@media(max-width:600px){.guest{width:100%;display:grid}.guest a{text-align:center}}
+@media(max-width:900px){
+  .placeholder.responsive { width:42px; }
+  .responsive.guest { display:grid; width:42px; height:42px; gap:0; }
+  .responsive.guest .guestLogin,
+  .responsive.guest .guestRegister { display:none; }
+  .responsive.guest .compactGuestLink { display:grid; width:42px; height:42px; padding:0; place-items:center; border:1px solid #ffffff25; border-radius:10px; background:#ffffff0c; color:#fff; }
+  .responsive.guest .compactGuestLink svg { width:19px; }
+  .responsive .trigger { display:grid; width:42px; min-width:42px; height:42px; padding:4px; grid-template-columns:1fr; }
+  .responsive .trigger > span { width:32px; height:32px; }
+  .responsive .trigger > div,
+  .responsive .trigger > svg { display:none; }
+}
+@media(max-width:600px){
+  .guest:not(.responsive){width:100%;display:grid}
+  .guest:not(.responsive) a{text-align:center}
+  .responsive .menu{position:fixed;top:86px;left:12px;right:12px;width:auto}
+}
+@media(max-width:430px){.responsive .menu{top:78px}}
