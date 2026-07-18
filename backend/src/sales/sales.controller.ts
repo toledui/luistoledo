@@ -105,6 +105,11 @@ export class SalesController {
   ) {
     return this.sales.orders(req.auth.sub);
   }
+  @Post('orders/:id/resume-payment')
+  @UseGuards(AuthGuard)
+  resumePayment(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.sales.resumePayment(req.auth.sub, id);
+  }
   @Get('orders/:id') @UseGuards(AuthGuard) order(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,

@@ -491,6 +491,34 @@
   border-radius: 13px;
   background: #fff;
 }
+.paymentCancelledNotice {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid #f0d59b;
+  border-radius: 12px;
+  background: #fff8e7;
+  color: #6d5319;
+}
+.paymentCancelledNotice > svg {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+.paymentCancelledNotice strong,
+.paymentCancelledNotice p {
+  display: block;
+}
+.paymentCancelledNotice p {
+  margin: 4px 0 0;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.orders > article.cancelledOrder {
+  border-color: #d4a43a;
+  box-shadow: 0 0 0 3px rgba(212, 164, 58, 0.13);
+}
 .orders article > header,
 .orders article > footer,
 .orders article > div {
@@ -534,7 +562,66 @@
   font-weight: 800;
 }
 .orders article > footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
   border-top: 1px solid #edf1f4;
   text-align: right;
   font-size: 10px;
+}
+.orderActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.orderActions button,
+.orderActions a {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #07111f;
+  color: #fff;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 900;
+}
+.orderActions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.orderActions svg {
+  width: 15px;
+  height: 15px;
+}
+.orderPaymentError {
+  flex-basis: 100%;
+  color: #a33c2d;
+  text-align: right;
+}
+@media (max-width: 520px) {
+  .orders {
+    width: calc(100% - 24px);
+    margin: 24px auto;
+  }
+  .orders article > footer,
+  .orderActions,
+  .orderActions button,
+  .orderActions a {
+    width: 100%;
+  }
+  .orders article > footer {
+    align-items: stretch;
+    text-align: left;
+  }
+  .orderPaymentError {
+    text-align: left;
+  }
 }

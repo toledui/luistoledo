@@ -47,6 +47,11 @@ export function CheckoutView() {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("cancelled") === "1")
+      router.replace("/mi-aprendizaje/pedidos?cancelled=1");
+  }, [router]);
+  useEffect(() => {
     void apiFetch<Methods>("/payments/methods").then((m) => {
       setMethods(m);
       if (!m.stripeEnabled && m.bankTransferEnabled)

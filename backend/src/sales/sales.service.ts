@@ -130,6 +130,57 @@ export class SalesService {
     };
   }
 
+  private async createStripeCheckoutSession(
+    order: {
+      id: string;
+      userId: string;
+      currency: string;
+      total: Prisma.Decimal;
+      items: { title: string }[];
+    },
+    cancelPath: string,
+    stripeClient?: Stripe,
+  ) {
+    const client = stripeClient ?? (await this.stripeClient()).client;
+    const frontendUrl = this.config.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const session = await client.checkout.sessions.create({
+      mode: 'payment',
+      client_reference_id: order.id,
+      metadata: { orderId: order.id, userId: order.userId },
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: order.currency.toLowerCase(),
+            unit_amount: Math.round(Number(order.total) * 100),
+            product_data: {
+              name:
+                order.items.length === 1
+                  ? order.items[0].title
+                  : `${order.items.length} cursos · Luis Toledo Academy`,
+            },
+          },
+        },
+      ],
+      success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}${cancelPath}`,
+    });
+    if (!session.url)
+      throw new BadRequestException('Stripe no devolvió una URL de pago');
+    await this.prisma.payment.updateMany({
+      where: {
+        orderId: order.id,
+        provider: 'STRIPE',
+        status: PaymentStatus.PENDING,
+      },
+      data: { externalId: session.id },
+    });
+    return session.url;
+  }
+
   private cartRecord(userId: string) {
     return this.prisma.cart.upsert({
       where: { userId },
@@ -367,40 +418,12 @@ export class SalesService {
       };
     }
 
-    const { client } = await this.stripeClient();
-    const frontendUrl = this.config.get<string>(
-      'FRONTEND_URL',
-      'http://localhost:3000',
-    );
     try {
-      const session = await client.checkout.sessions.create({
-        mode: 'payment',
-        customer_email: undefined,
-        client_reference_id: order.id,
-        metadata: { orderId: order.id, userId },
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: order.currency.toLowerCase(),
-              unit_amount: Math.round(Number(order.total) * 100),
-              product_data: {
-                name:
-                  order.items.length === 1
-                    ? order.items[0].title
-                    : `${order.items.length} cursos · Luis Toledo Academy`,
-              },
-            },
-          },
-        ],
-        success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${frontendUrl}/checkout?cancelled=1`,
-      });
-      await this.prisma.payment.updateMany({
-        where: { orderId: order.id, provider: 'STRIPE' },
-        data: { externalId: session.id },
-      });
-      return { order, paymentMethod, checkoutUrl: session.url };
+      const checkoutUrl = await this.createStripeCheckoutSession(
+        order,
+        `/mi-aprendizaje/pedidos?cancelled=1&order=${order.id}`,
+      );
+      return { order, paymentMethod, checkoutUrl };
     } catch (error) {
       await this.prisma.order.update({
         where: { id: order.id },
@@ -702,6 +725,44 @@ export class SalesService {
         payments: true,
       },
     });
+  }
+  async resumePayment(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: { items: true, payments: true },
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    if (order.status !== OrderStatus.PENDING)
+      throw new BadRequestException(
+        order.status === OrderStatus.PAID
+          ? 'Este pedido ya fue pagado'
+          : 'Este pedido no admite reanudar el pago con tarjeta',
+      );
+    const payment = order.payments.find(
+      (item) =>
+        item.provider === 'STRIPE' && item.status === PaymentStatus.PENDING,
+    );
+    if (!payment)
+      throw new BadRequestException('El pago pendiente de Stripe no existe');
+
+    const { client } = await this.stripeClient();
+    if (payment.externalId) {
+      try {
+        const previous = await client.checkout.sessions.retrieve(
+          payment.externalId,
+        );
+        if (previous.status === 'open' && previous.url)
+          return { orderId: order.id, checkoutUrl: previous.url };
+      } catch {
+        // Una sesión vencida o eliminada no impide crear una nueva.
+      }
+    }
+    const checkoutUrl = await this.createStripeCheckoutSession(
+      order,
+      `/mi-aprendizaje/pedidos?cancelled=1&order=${order.id}`,
+      client,
+    );
+    return { orderId: order.id, checkoutUrl };
   }
   async order(userId: string, id: string) {
     const order = await this.prisma.order.findFirst({
