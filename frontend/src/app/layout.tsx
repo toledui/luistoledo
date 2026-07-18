@@ -3,8 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { PublicBranding } from "@/components/public-branding";
 import { CartProvider } from "@/components/cart/cart-context";
-import { PublicNavbar } from "@/components/public-navbar/public-navbar";
-import { SiteFooter } from "@/components/site-footer/site-footer";
+import { PublicShell } from "@/components/public-shell/public-shell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,9 +38,7 @@ export default function RootLayout({
       <body>
         <CartProvider>
           <PublicBranding />
-          <PublicNavbar />
-          {children}
-          <SiteFooter />
+          <PublicShell>{children}</PublicShell>
         </CartProvider>
       </body>
     </html>
