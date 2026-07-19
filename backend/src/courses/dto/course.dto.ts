@@ -1,9 +1,13 @@
 import { CourseLevel, CourseStatus, LessonType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -72,4 +76,18 @@ export class UpdateLessonDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
   @IsOptional() @IsBoolean() isPreview?: boolean;
   @IsOptional() @IsBoolean() isPublished?: boolean;
+}
+
+export class ReorderLessonsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayUnique()
+  @IsString({ each: true })
+  lessonIds!: string[];
+}
+
+export class CreateLessonResourceDto {
+  @IsString() @IsNotEmpty() @MaxLength(191) title!: string;
+  @IsOptional() @IsString() @MaxLength(2048) url?: string;
+  @IsOptional() @IsString() mediaId?: string;
 }

@@ -17,7 +17,9 @@ import { CoursesService } from './courses.service';
 import {
   CreateCourseDto,
   CreateLessonDto,
+  CreateLessonResourceDto,
   CreateSectionDto,
+  ReorderLessonsDto,
   UpdateCourseDto,
   UpdateLessonDto,
   UpdateSectionDto,
@@ -79,11 +81,28 @@ export class CoursesController {
   ) {
     return this.courses.createLesson(id, dto);
   }
+  @Patch('sections/:id/lessons/reorder') reorderLessons(
+    @Param('id') id: string,
+    @Body() dto: ReorderLessonsDto,
+  ) {
+    return this.courses.reorderLessons(id, dto);
+  }
   @Patch('lessons/:id') updateLesson(
     @Param('id') id: string,
     @Body() dto: UpdateLessonDto,
   ) {
     return this.courses.updateLesson(id, dto);
+  }
+  @Post('lessons/:id/resources') createLessonResource(
+    @Param('id') id: string,
+    @Body() dto: CreateLessonResourceDto,
+  ) {
+    return this.courses.createLessonResource(id, dto);
+  }
+  @Delete('lessons/resources/:id') removeLessonResource(
+    @Param('id') id: string,
+  ) {
+    return this.courses.removeLessonResource(id);
   }
   @Delete('lessons/:id') removeLesson(@Param('id') id: string) {
     return this.courses.removeLesson(id);

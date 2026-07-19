@@ -4,6 +4,7 @@ import "./globals.css";
 import { PublicBranding } from "@/components/public-branding";
 import { CartProvider } from "@/components/cart/cart-context";
 import { PublicShell } from "@/components/public-shell/public-shell";
+import { ScrollToTop } from "@/components/scroll-to-top/scroll-to-top";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,9 +35,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es-MX" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html
+      lang="es-MX"
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>
         <CartProvider>
+          <ScrollToTop />
           <PublicBranding />
           <PublicShell>{children}</PublicShell>
         </CartProvider>

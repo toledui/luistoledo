@@ -7,13 +7,17 @@ import {
   CourseLevel,
   CourseStatus,
   EnrollmentStatus,
+  LessonResourceKind,
+  MediaKind,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateCourseDto,
   CreateLessonDto,
+  CreateLessonResourceDto,
   CreateSectionDto,
+  ReorderLessonsDto,
   UpdateCourseDto,
   UpdateLessonDto,
   UpdateSectionDto,
@@ -30,7 +34,13 @@ const detailInclude = {
     include: {
       lessons: {
         orderBy: { position: 'asc' as const },
-        include: { media: true },
+        include: {
+          media: true,
+          resources: {
+            orderBy: { position: 'asc' as const },
+            include: { media: true },
+          },
+        },
       },
     },
   },
@@ -181,6 +191,7 @@ export class CoursesService {
           content: lesson.isPreview ? lesson.content : null,
           media: lesson.isPreview ? lesson.media : null,
           mediaId: lesson.isPreview ? lesson.mediaId : null,
+          resources: lesson.isPreview ? lesson.resources : [],
         })),
       })),
     };
@@ -299,6 +310,15 @@ export class CoursesService {
                 position: lesson.position,
                 isPreview: lesson.isPreview,
                 isPublished: false,
+                resources: {
+                  create: lesson.resources.map((resource) => ({
+                    title: resource.title,
+                    kind: resource.kind,
+                    url: resource.url,
+                    mediaId: resource.mediaId,
+                    position: resource.position,
+                  })),
+                },
               })),
             },
           })),
@@ -344,8 +364,93 @@ export class CoursesService {
       },
     });
   }
+  async reorderLessons(sectionId: string, dto: ReorderLessonsDto) {
+    const lessons = await this.prisma.lesson.findMany({
+      where: { sectionId },
+      select: { id: true },
+    });
+    const currentIds = new Set(lessons.map((lesson) => lesson.id));
+    const hasExactLessonSet =
+      lessons.length === dto.lessonIds.length &&
+      new Set(dto.lessonIds).size === dto.lessonIds.length &&
+      dto.lessonIds.every((lessonId) => currentIds.has(lessonId));
+
+    if (!hasExactLessonSet)
+      throw new BadRequestException(
+        'El orden debe incluir todas las lecciones del módulo',
+      );
+
+    await this.prisma.$transaction(
+      dto.lessonIds.map((lessonId, position) =>
+        this.prisma.lesson.update({
+          where: { id: lessonId },
+          data: { position },
+        }),
+      ),
+    );
+
+    return { reordered: true };
+  }
   updateLesson(id: string, dto: UpdateLessonDto) {
     return this.prisma.lesson.update({ where: { id }, data: dto });
+  }
+  async createLessonResource(lessonId: string, dto: CreateLessonResourceDto) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true },
+    });
+    if (!lesson) throw new NotFoundException('Lección no encontrada');
+    if (!dto.title.trim())
+      throw new BadRequestException('Escribe el nombre del recurso');
+
+    const url = dto.url?.trim();
+    const mediaId = dto.mediaId?.trim();
+    if ((!url && !mediaId) || (url && mediaId))
+      throw new BadRequestException(
+        'Selecciona un enlace o un archivo para el recurso',
+      );
+
+    let kind: LessonResourceKind = LessonResourceKind.LINK;
+    if (url) {
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+      } catch {
+        throw new BadRequestException('Ingresa un enlace válido');
+      }
+      if (parsed.protocol !== 'https:')
+        throw new BadRequestException('El enlace debe usar HTTPS');
+    } else {
+      const media = await this.prisma.mediaAsset.findUnique({
+        where: { id: mediaId },
+        select: { kind: true },
+      });
+      if (!media || media.kind === MediaKind.VIDEO_EMBED)
+        throw new BadRequestException('Selecciona un PDF o una imagen válida');
+      kind =
+        media.kind === MediaKind.IMAGE
+          ? LessonResourceKind.IMAGE
+          : LessonResourceKind.DOCUMENT;
+    }
+
+    const position = await this.prisma.lessonResource.count({
+      where: { lessonId },
+    });
+    return this.prisma.lessonResource.create({
+      data: {
+        lessonId,
+        title: dto.title.trim(),
+        kind,
+        url: url || null,
+        mediaId: mediaId || null,
+        position,
+      },
+      include: { media: true },
+    });
+  }
+  async removeLessonResource(id: string) {
+    await this.prisma.lessonResource.delete({ where: { id } });
+    return { deleted: true };
   }
   async removeLesson(id: string) {
     await this.prisma.lesson.delete({ where: { id } });

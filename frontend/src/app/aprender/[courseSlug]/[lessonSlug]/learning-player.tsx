@@ -7,7 +7,10 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  EllipsisVertical,
+  ExternalLink,
   FileText,
+  ImageIcon,
   LoaderCircle,
   LockKeyhole,
   Menu,
@@ -23,6 +26,13 @@ import styles from "./learning.module.css";
 import { QuizPlayer } from "./quiz-player";
 
 type Media = { url: string; name: string; provider?: string };
+type LessonResource = {
+  id: string;
+  title: string;
+  kind: "LINK" | "DOCUMENT" | "IMAGE";
+  url?: string;
+  media?: Media;
+};
 type Lesson = {
   id: string;
   title: string;
@@ -30,6 +40,7 @@ type Lesson = {
   content?: string;
   media?: Media;
   durationMinutes: number;
+  resources?: LessonResource[];
 };
 type Course = {
   title: string;
@@ -58,6 +69,7 @@ export function LearningPlayer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(),
@@ -109,6 +121,10 @@ export function LearningPlayer({
       .map((progress) => progress.lessonId) ?? [],
   );
   const percentage = course?.courseProgress?.percentage ?? 0;
+  const lessonResources =
+    lesson?.resources?.filter((resource) =>
+      Boolean(resource.media?.url || resource.url),
+    ) ?? [];
 
   useEffect(() => {
     if (!selectedId || !course) return;
@@ -140,6 +156,7 @@ export function LearningPlayer({
     }
     setSelectedId(id);
     setMenuOpen(false);
+    setResourcesOpen(false);
     router.replace(`/aprender/${courseSlug}/${id}`);
   }
 
@@ -270,17 +287,67 @@ export function LearningPlayer({
               </span>
               <h1>{lesson?.title}</h1>
             </div>
-            {lesson?.type !== "QUIZ" && (
-              <button
-                onClick={() => void completeLesson()}
-                disabled={saving || !lesson || completed.has(lesson.id)}
-              >
-                {saving ? <LoaderCircle className={styles.spin} /> : <Check />}
-                {lesson && completed.has(lesson.id)
-                  ? "Completada"
-                  : "Marcar como completada"}
-              </button>
-            )}
+            <div className={styles.lessonActions}>
+              {!!lessonResources.length && lesson && (
+                <div className={styles.resourcesDropdown}>
+                  <button
+                    type="button"
+                    className={styles.resourcesTrigger}
+                    aria-label={`Ver recursos de ${lesson.title}`}
+                    aria-expanded={resourcesOpen}
+                    title="Recursos de la lección"
+                    onClick={() =>
+                      setResourcesOpen((current) => !current)
+                    }
+                  >
+                    <EllipsisVertical />
+                  </button>
+                  {resourcesOpen && (
+                    <div className={styles.resourcesMenu} role="menu">
+                      <header>
+                        <strong>Recursos</strong>
+                        <small>{lessonResources.length} disponibles</small>
+                      </header>
+                      {lessonResources.map((resource) => (
+                        <a
+                          key={resource.id}
+                          href={resource.media?.url || resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          role="menuitem"
+                          onClick={() => setResourcesOpen(false)}
+                        >
+                          {resource.kind === "IMAGE" ? (
+                            <ImageIcon />
+                          ) : resource.kind === "DOCUMENT" ? (
+                            <FileText />
+                          ) : (
+                            <ExternalLink />
+                          )}
+                          <span>{resource.title}</span>
+                          <ExternalLink />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {lesson?.type !== "QUIZ" && (
+                <button
+                  onClick={() => void completeLesson()}
+                  disabled={saving || !lesson || completed.has(lesson.id)}
+                >
+                  {saving ? (
+                    <LoaderCircle className={styles.spin} />
+                  ) : (
+                    <Check />
+                  )}
+                  {lesson && completed.has(lesson.id)
+                    ? "Completada"
+                    : "Marcar como completada"}
+                </button>
+              )}
+            </div>
           </div>
           <nav className={styles.navigation}>
             <button

@@ -16,6 +16,8 @@ import {
   ExternalLink,
   GraduationCap,
   CircleHelp,
+  ImageIcon,
+  Link2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -40,6 +42,15 @@ type Lesson = {
   position: number;
   isPreview: boolean;
   isPublished: boolean;
+  resources?: LessonResource[];
+};
+type LessonResource = {
+  id: string;
+  title: string;
+  kind: "LINK" | "DOCUMENT" | "IMAGE";
+  url?: string;
+  mediaId?: string;
+  media?: Media;
 };
 type Section = {
   id: string;
@@ -116,6 +127,13 @@ export function CourseEditor({ id }: { id: string }) {
   const [deletePath, setDeletePath] = useState<string | null>(null);
   const [embedValues, setEmbedValues] = useState<Record<string, string>>({});
   const [busyLesson, setBusyLesson] = useState<string | null>(null);
+  const [busyResource, setBusyResource] = useState<string | null>(null);
+  const [resourceLinks, setResourceLinks] = useState<
+    Record<string, { title: string; url: string }>
+  >({});
+  const [reorderingSection, setReorderingSection] = useState<string | null>(
+    null,
+  );
   const load = useCallback(async () => {
     const [c, m, enrolled] = await Promise.all([
       apiFetch<Course>(`/admin/courses/${id}`),
@@ -228,6 +246,73 @@ export function CourseEditor({ id }: { id: string }) {
       body: JSON.stringify(values),
     });
     await load();
+  }
+  async function moveLesson(
+    sectionId: string,
+    lessonIndex: number,
+    direction: -1 | 1,
+  ) {
+    if (!course || reorderingSection) return;
+    const section = course.sections.find((item) => item.id === sectionId);
+    const targetIndex = lessonIndex + direction;
+    if (!section || targetIndex < 0 || targetIndex >= section.lessons.length)
+      return;
+
+    const previousLessons = section.lessons;
+    const reorderedLessons = [...previousLessons];
+    [reorderedLessons[lessonIndex], reorderedLessons[targetIndex]] = [
+      reorderedLessons[targetIndex],
+      reorderedLessons[lessonIndex],
+    ];
+    const positionedLessons = reorderedLessons.map((lesson, position) => ({
+      ...lesson,
+      position,
+    }));
+
+    setCourse((current) =>
+      current
+        ? {
+            ...current,
+            sections: current.sections.map((item) =>
+              item.id === sectionId
+                ? { ...item, lessons: positionedLessons }
+                : item,
+            ),
+          }
+        : current,
+    );
+    setReorderingSection(sectionId);
+    setMessage("");
+    try {
+      await apiFetch(`/admin/courses/sections/${sectionId}/lessons/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonIds: positionedLessons.map((lesson) => lesson.id),
+        }),
+      });
+      setMessage("Orden de las lecciones guardado.");
+    } catch (error) {
+      setCourse((current) =>
+        current
+          ? {
+              ...current,
+              sections: current.sections.map((item) =>
+                item.id === sectionId
+                  ? { ...item, lessons: previousLessons }
+                  : item,
+              ),
+            }
+          : current,
+      );
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible guardar el nuevo orden.",
+      );
+    } finally {
+      setReorderingSection(null);
+    }
   }
   async function remove(path: string) {
     await apiFetch(path, { method: "DELETE" });
@@ -368,6 +453,91 @@ export function CourseEditor({ id }: { id: string }) {
       );
     } finally {
       setBusyLesson(null);
+    }
+  }
+  async function addLinkResource(lesson: Lesson) {
+    const draft = resourceLinks[lesson.id] || { title: "", url: "" };
+    if (!draft.title.trim() || !draft.url.trim()) {
+      setMessage("Escribe el nombre y el enlace del recurso.");
+      return;
+    }
+    setBusyResource(lesson.id);
+    setMessage("");
+    try {
+      await apiFetch(`/admin/courses/lessons/${lesson.id}/resources`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: draft.title.trim(),
+          url: draft.url.trim(),
+        }),
+      });
+      setResourceLinks((current) => ({
+        ...current,
+        [lesson.id]: { title: "", url: "" },
+      }));
+      setMessage("Enlace agregado a la lección.");
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible agregar el enlace.",
+      );
+    } finally {
+      setBusyResource(null);
+    }
+  }
+  async function uploadLessonResource(lesson: Lesson, file?: File) {
+    if (!file) return;
+    setBusyResource(lesson.id);
+    setMessage("");
+    const body = new FormData();
+    body.append("file", file);
+    try {
+      const asset = await apiFetch<Media>("/admin/media/upload", {
+        method: "POST",
+        body,
+      });
+      await apiFetch(`/admin/courses/lessons/${lesson.id}/resources`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: asset.name, mediaId: asset.id }),
+      });
+      setMetadata((current) =>
+        current
+          ? { ...current, media: [asset, ...current.media] }
+          : current,
+      );
+      setMessage("Archivo agregado a los recursos de la lección.");
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible subir el recurso.",
+      );
+    } finally {
+      setBusyResource(null);
+    }
+  }
+  async function removeLessonResource(resourceId: string) {
+    setBusyResource(resourceId);
+    setMessage("");
+    try {
+      await apiFetch(`/admin/courses/lessons/resources/${resourceId}`, {
+        method: "DELETE",
+      });
+      setMessage("Recurso eliminado de la lección.");
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "No fue posible eliminar el recurso.",
+      );
+    } finally {
+      setBusyResource(null);
     }
   }
   async function enrollStudent() {
@@ -857,6 +1027,155 @@ export function CourseEditor({ id }: { id: string }) {
                             )}
                           </div>
                         )}
+                        <section className={styles.additionalResources}>
+                          <header>
+                            <div>
+                              <strong>Recursos adicionales</strong>
+                              <small>
+                                Enlaces, PDF o imágenes para esta lección
+                              </small>
+                            </div>
+                            <span>{lesson.resources?.length ?? 0}</span>
+                          </header>
+                          {!!lesson.resources?.length && (
+                            <div className={styles.lessonResourceList}>
+                              {lesson.resources.map((resource) => {
+                                const resourceUrl =
+                                  resource.media?.url || resource.url;
+                                return (
+                                  <div key={resource.id}>
+                                    {resource.kind === "LINK" ? (
+                                      <Link2 />
+                                    ) : resource.kind === "IMAGE" ? (
+                                      <ImageIcon />
+                                    ) : (
+                                      <FileText />
+                                    )}
+                                    {resourceUrl ? (
+                                      <a
+                                        href={resourceUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {resource.title}
+                                      </a>
+                                    ) : (
+                                      <span>{resource.title}</span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      aria-label={`Eliminar ${resource.title}`}
+                                      disabled={busyResource !== null}
+                                      onClick={() =>
+                                        void removeLessonResource(resource.id)
+                                      }
+                                    >
+                                      {busyResource === resource.id ? (
+                                        <LoaderCircle className={styles.spin} />
+                                      ) : (
+                                        <Trash2 />
+                                      )}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className={styles.resourceLinkForm}>
+                            <input
+                              aria-label={`Nombre del enlace de ${lesson.title}`}
+                              placeholder="Nombre del enlace"
+                              value={resourceLinks[lesson.id]?.title || ""}
+                              onChange={(event) =>
+                                setResourceLinks((current) => ({
+                                  ...current,
+                                  [lesson.id]: {
+                                    title: event.target.value,
+                                    url: current[lesson.id]?.url || "",
+                                  },
+                                }))
+                              }
+                            />
+                            <input
+                              type="url"
+                              aria-label={`URL del recurso de ${lesson.title}`}
+                              placeholder="https://..."
+                              value={resourceLinks[lesson.id]?.url || ""}
+                              onChange={(event) =>
+                                setResourceLinks((current) => ({
+                                  ...current,
+                                  [lesson.id]: {
+                                    title: current[lesson.id]?.title || "",
+                                    url: event.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                            <button
+                              type="button"
+                              disabled={busyResource !== null}
+                              onClick={() => void addLinkResource(lesson)}
+                            >
+                              <Link2 />
+                              Agregar enlace
+                            </button>
+                          </div>
+                          <label className={styles.resourceUpload}>
+                            {busyResource === lesson.id ? (
+                              <LoaderCircle className={styles.spin} />
+                            ) : (
+                              <Upload />
+                            )}
+                            {busyResource === lesson.id
+                              ? "Subiendo recurso…"
+                              : "Subir PDF o imagen"}
+                            <input
+                              type="file"
+                              accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
+                              disabled={busyResource !== null}
+                              onChange={(event) => {
+                                void uploadLessonResource(
+                                  lesson,
+                                  event.target.files?.[0],
+                                );
+                                event.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </section>
+                      </div>
+                      <div
+                        className={styles.lessonOrder}
+                        aria-label={`Reordenar ${lesson.title}`}
+                      >
+                        <button
+                          type="button"
+                          title="Subir lección"
+                          aria-label={`Subir ${lesson.title}`}
+                          disabled={
+                            lessonIndex === 0 ||
+                            reorderingSection !== null
+                          }
+                          onClick={() =>
+                            void moveLesson(section.id, lessonIndex, -1)
+                          }
+                        >
+                          <ChevronUp />
+                        </button>
+                        <button
+                          type="button"
+                          title="Bajar lección"
+                          aria-label={`Bajar ${lesson.title}`}
+                          disabled={
+                            lessonIndex === section.lessons.length - 1 ||
+                            reorderingSection !== null
+                          }
+                          onClick={() =>
+                            void moveLesson(section.id, lessonIndex, 1)
+                          }
+                        >
+                          <ChevronDown />
+                        </button>
                       </div>
                       <label>
                         <input

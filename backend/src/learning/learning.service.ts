@@ -38,7 +38,13 @@ export class LearningService {
             lessons: {
               where: { isPublished: true },
               orderBy: { position: 'asc' },
-              include: { media: true },
+              include: {
+                media: true,
+                resources: {
+                  orderBy: { position: 'asc' },
+                  include: { media: true },
+                },
+              },
             },
           },
         },

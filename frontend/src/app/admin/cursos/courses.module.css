@@ -756,7 +756,7 @@
 }
 .lesson {
   display: grid;
-  grid-template-columns: 35px 1fr auto auto 30px;
+  grid-template-columns: 35px 1fr auto auto auto 30px;
   align-items: center;
   gap: 10px;
   padding: 13px 0;
@@ -774,6 +774,30 @@
 .lesson > div {
   display: grid;
   gap: 5px;
+}
+.lessonOrder {
+  display: flex !important;
+  gap: 3px !important;
+}
+.lessonOrder button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #dce4ed;
+  border-radius: 7px;
+  background: #fff;
+  color: #64758a;
+  cursor: pointer;
+}
+.lessonOrder button:hover:not(:disabled) {
+  border-color: var(--primary-strong);
+  color: var(--primary-strong);
+}
+.lessonOrder button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 .lesson > div input,
 .lesson textarea,
@@ -839,6 +863,115 @@
   background: #eef8fb;
   color: #28778a !important;
   font-weight: 800;
+}
+.additionalResources {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid #dfe7ee;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.additionalResources > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.additionalResources > header div {
+  display: grid;
+  gap: 2px;
+}
+.additionalResources > header strong {
+  color: #31445a;
+  font-size: 11px;
+}
+.additionalResources > header span {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  background: #e3f7fb;
+  color: #16788e;
+  font-size: 10px;
+  font-weight: 900;
+}
+.lessonResourceList {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+.lessonResourceList > div {
+  display: grid;
+  grid-template-columns: 20px 1fr 28px;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 6px;
+  border: 1px solid #e2e8ee;
+  border-radius: 7px;
+  background: #fff;
+}
+.lessonResourceList svg {
+  width: 14px;
+  color: var(--primary-strong);
+}
+.lessonResourceList a,
+.lessonResourceList span {
+  overflow: hidden;
+  color: #43576d;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lessonResourceList button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ad4338;
+}
+.resourceLinkForm {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr auto;
+  gap: 6px;
+  margin-top: 10px;
+}
+.resourceLinkForm button,
+.resourceUpload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--bg);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+}
+.resourceLinkForm button svg,
+.resourceUpload svg {
+  width: 13px;
+}
+.resourceUpload {
+  margin-top: 6px;
+  background: #e9f0f4;
+  color: #42566c;
+  cursor: pointer;
+}
+.resourceUpload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
 }
 .lesson small {
   color: #8491a2;
@@ -975,6 +1108,13 @@
   .lesson > label,
   .lesson > button {
     grid-column: 2;
+  }
+  .lessonOrder {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+  .resourceLinkForm {
+    grid-template-columns: 1fr;
   }
   .courseGrid {
     grid-template-columns: 1fr;

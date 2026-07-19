@@ -170,6 +170,80 @@
 .lessonInfo button:disabled {
   opacity: 0.55;
 }
+.lessonActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.resourcesDropdown {
+  position: relative;
+}
+.lessonInfo .resourcesTrigger {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #d4dde6;
+  background: #fff;
+  color: #43566c;
+}
+.resourcesTrigger svg {
+  width: 20px;
+}
+.resourcesMenu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(320px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 48px #182b4033;
+}
+.resourcesMenu header {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e7ecf1;
+  background: #f6f9fb;
+}
+.resourcesMenu header strong,
+.resourcesMenu header small {
+  display: block;
+}
+.resourcesMenu header strong {
+  font-size: 11px;
+}
+.resourcesMenu header small {
+  margin-top: 3px;
+  color: #8290a1;
+  font-size: 9px;
+}
+.resourcesMenu a {
+  display: grid;
+  grid-template-columns: 24px 1fr 16px;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #edf1f4;
+  color: #3e5268;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.resourcesMenu a:hover {
+  background: #eef9fb;
+}
+.resourcesMenu a svg {
+  width: 15px;
+  color: var(--primary-strong);
+}
+.resourcesMenu a > svg:last-child {
+  width: 12px;
+  color: #8c99a8;
+}
 .navigation {
   display: flex;
   justify-content: space-between;
@@ -354,6 +428,15 @@
   .lessonInfo button {
     width: 100%;
     justify-content: center;
+  }
+  .lessonActions {
+    width: 100%;
+  }
+  .lessonActions > button:last-child {
+    flex: 1;
+  }
+  .lessonInfo .resourcesTrigger {
+    width: 42px;
   }
 }
 @media (max-width: 560px) {
