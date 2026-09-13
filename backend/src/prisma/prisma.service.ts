@@ -12,6 +12,7 @@ function createAdapter(databaseUrl: string) {
     password: decodeURIComponent(url.password),
     database: url.pathname.slice(1),
     connectionLimit: 10,
+    allowPublicKeyRetrieval: true,
   });
 }
 
