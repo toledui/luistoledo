@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { operations, callOperation, resolveSchema } from './academy.mjs';
+import { operations, callOperation, resolveSchema, normalizeParameterSchema } from './academy.mjs';
 const document = { components: { schemas: { Course: { type: 'object', required: ['title'], properties: { title: { type: 'string' } } } } }, paths: {
   '/api/v1/admin/courses/{id}': { get: { operationId: 'getCourse', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }] }, patch: { operationId: 'editCourse', requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/Course' } } } } } },
   '/api/v1/admin/settings/api-keys': { post: {} }, '/api/v1/admin/users/{id}/roles': { patch: {} },
@@ -18,6 +18,23 @@ test('discovers schemas and excludes credential management, sessions, non-admin 
   assert.equal(operations(document, 'http://localhost:4000/api/v1', true).size, 1);
   assert.deepEqual(resolveSchema({ $ref: '#/components/schemas/Missing' }, document), {});
 });
+test('repairs legacy object pagination, preserving bounds and defaults without retyping genuine objects', () => {
+  const legacy = { components: { schemas: { Object: { type: 'object', properties: {} } } } };
+  // Swagger's Object component may be an empty properties map, with no actual fields.
+  const emptyObject = { components: { schemas: { Object: { type: 'object' } } } };
+  const schema = { minimum: 1, maximum: 100, default: 25, allOf: [{ $ref: '#/components/schemas/Object' }] };
+  assert.deepEqual(normalizeParameterSchema(schema, emptyObject, { in: 'query', name: 'limit' }), { minimum: 1, maximum: 100, default: 25, type: 'integer' });
+  assert.deepEqual(normalizeParameterSchema(schema, legacy, { in: 'query', name: 'limit' }), { minimum: 1, maximum: 100, default: 25, type: 'integer' });
+  const genuine = { minimum: 1, type: 'object', properties: { value: { type: 'number' } } };
+  assert.deepEqual(normalizeParameterSchema(genuine, legacy, { in: 'query', name: 'page' }), genuine);
+  assert.deepEqual(normalizeParameterSchema(schema, emptyObject, { in: 'query', name: 'price' }), resolveSchema(schema, emptyObject));
+  const correct = { type: 'integer', minimum: 1, default: 1 };
+  assert.deepEqual(normalizeParameterSchema(correct, {}, { in: 'query', name: 'page' }), correct);
+  const spec = { ...emptyObject, paths: { '/api/v1/admin/users': { get: { parameters: [{ in: 'query', name: 'page', schema: { minimum: 1, default: 1, allOf: [{ $ref: '#/components/schemas/Object' }] } }, { in: 'query', name: 'limit', schema }] } } } };
+  const [operation] = operations(spec, 'http://localhost:4000/api/v1').values();
+  assert.equal(operation.tool.inputSchema.properties.query.properties.page.type, 'integer');
+  assert.equal(operation.tool.inputSchema.properties.query.properties.limit.maximum, 100);
+});
 test('sends bearer auth, encoded IDs and bodies, propagates API errors, and never follows redirects', async () => {
   const requests = [];
   const server = createServer((req, res) => {
@@ -33,6 +50,9 @@ test('sends bearer auth, encoded IDs and bodies, propagates API errors, and neve
     assert.deepEqual(JSON.parse(result.content[0].text), { total: 42 });
     assert.equal(requests[0].url, '/api/v1/admin/courses/course%20one?page=2');
     assert.equal(requests[0].authorization, 'Bearer secret');
+    const sent = requests.length;
+    await assert.rejects(callOperation(base, 'secret', operation, { path: { id: 'course' }, query: { page: {} } }), /page.*escalar/);
+    assert.equal(requests.length, sent);
     assert.equal((await callOperation(base, 'secret', operation, { path: { id: 'forbidden' } })).isError, true);
     await assert.rejects(callOperation(base, 'secret', operation, { path: { id: 'redirect' } }));
     assert.equal(requests.some((request) => request.url === '/leak'), false);

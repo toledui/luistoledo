@@ -11,6 +11,24 @@ export function resolveSchema(schema, document, seen = new Set()) {
   return Object.fromEntries(Object.entries(schema).map(([key, value]) => [key, resolveSchema(value, document, seen)]));
 }
 
+export function normalizeParameterSchema(schema, document, parameter) {
+  const resolved = resolveSchema(schema, document);
+  // Compatibility with older Academy OpenAPI builds: numeric pagination defaults
+  // were emitted as Object, sometimes inside allOf. Never reinterpret real objects
+  // or infer integer semantics for unrelated numeric parameters.
+  if (parameter.in !== 'query' || !['page', 'limit'].includes(parameter.name)) return resolved;
+  const flatten = (part) => [part, ...(part.allOf ?? []).flatMap(flatten)];
+  const parts = flatten(resolved);
+  const objectKeys = ['additionalProperties', 'patternProperties', 'minProperties', 'maxProperties'];
+  if (parts.some((part) => objectKeys.some((key) => key in part) || Object.keys(part.properties ?? {}).length || (part.required?.length ?? 0) || part.anyOf || part.oneOf || (part.type && part.type !== 'object'))) return resolved;
+  if (!parts.some((part) => ['minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum'].some((key) => typeof part[key] === 'number'))) return resolved;
+  const normalized = Object.assign({}, ...parts);
+  delete normalized.allOf;
+  delete normalized.properties;
+  delete normalized.required;
+  return { ...normalized, type: 'integer' };
+}
+
 export function operations(document, baseUrl, readOnly = false) {
   const prefix = new URL(baseUrl).pathname.replace(/\/$/, '');
   const result = new Map();
@@ -25,7 +43,7 @@ export function operations(document, baseUrl, readOnly = false) {
         const parameters = [...(pathItem.parameters ?? []), ...(operation.parameters ?? [])].map((p) => resolveSchema(p, document)).filter((p) => p.in === location);
         if (!parameters.length) continue;
         const requiredFields = parameters.filter((p) => p.required).map((p) => p.name);
-        properties[location] = { type: 'object', properties: Object.fromEntries(parameters.map((p) => [p.name, { ...resolveSchema(p.schema ?? { type: 'string' }, document), ...(p.description ? { description: p.description } : {}) }])), additionalProperties: false, ...(requiredFields.length ? { required: requiredFields } : {}) };
+        properties[location] = { type: 'object', properties: Object.fromEntries(parameters.map((p) => [p.name, { ...normalizeParameterSchema(p.schema ?? { type: 'string' }, document, p), ...(p.description ? { description: p.description } : {}) }])), additionalProperties: false, ...(requiredFields.length ? { required: requiredFields } : {}) };
         if (requiredFields.length) required.push(location);
       }
       const requestBody = resolveSchema(operation.requestBody, document);
@@ -48,12 +66,16 @@ export function operations(document, baseUrl, readOnly = false) {
 export async function callOperation(baseUrl, apiKey, operation, args = {}) {
   let path = operation.path.replace(/\{([^}]+)\}/g, (_, name) => {
     const value = args.path?.[name];
-    if (value === undefined || value === '' || value === '.' || value === '..') throw new Error(`Parámetro de ruta inválido: ${name}`);
+    if (!['string', 'number'].includes(typeof value) || value === '' || value === '.' || value === '..') throw new Error(`Parámetro de ruta inválido: ${name}`);
     return encodeURIComponent(String(value));
   });
   if (!path.startsWith('/admin/') || path.includes('{')) throw new Error('Ruta inválida');
   const url = new URL(`${baseUrl.replace(/\/$/, '')}${path}`);
-  for (const [key, value] of Object.entries(args.query ?? {})) if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  for (const [key, value] of Object.entries(args.query ?? {})) {
+    if (value === undefined || value === null) continue;
+    if (!['string', 'number', 'boolean'].includes(typeof value)) throw new Error(`El parámetro de consulta ${key} debe ser un valor escalar, no un objeto`);
+    url.searchParams.set(key, String(value));
+  }
   const response = await fetch(url, { method: operation.method, redirect: 'error', signal: AbortSignal.timeout(30_000), headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json', ...(args.body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(args.body === undefined ? {} : { body: JSON.stringify(args.body) }) });
   const text = await response.text();
   return { content: [{ type: 'text', text: text || JSON.stringify({ status: response.status }) }], ...(response.ok ? {} : { isError: true }) };

@@ -8,6 +8,8 @@
 
 El MCP usa el SDK oficial, transporte **stdio** y herramientas separadas por operación, generadas desde OpenAPI (`/api/docs-json`). El backend debe estar accesible al iniciar Hermes. Las respuestas 401 indican clave inválida, vencida, revocada o propietario inactivo; 403 indica permisos insuficientes. Las herramientas disponibles en el catálogo no sustituyen los permisos: el backend evalúa cada llamada. `ACADEMY_READ_ONLY=true` oculta todas las herramientas de escritura adicionalmente. `ACADEMY_OPENAPI_URL` permite cambiar la URL de OpenAPI si el proxy la publica en otro lugar.
 
+La paginación usa enteros: `query: { "page": 1, "limit": 25 }`. El backend publica estos campos como `integer`, opcionales y con límites/defaults explícitos. El MCP también reconoce el esquema antiguo de paginación con `Object/allOf` y cotas numéricas, sin reinterpretar objetos reales u otros parámetros. Rechaza objetos en parámetros de consulta antes de enviarlos a la API. Después de actualizar backend y MCP, ejecutar `/reload-mcp` para descartar esquemas almacenados. `npm run test:openapi --prefix backend` verifica el OpenAPI compilado, los esquemas MCP y la validación Nest sin acceder a MySQL ni enviar correos.
+
 ## Operaciones
 
 Todas las rutas son relativas a `ACADEMY_API_URL`, normalmente `https://backend/api/v1`.
