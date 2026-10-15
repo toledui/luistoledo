@@ -23,4 +23,5 @@ export type AccessTokenPayload = {
   sub: string;
   email: string;
   sessionId: string;
+  apiKeyId?: string;
 };

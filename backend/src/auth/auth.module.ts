@@ -4,11 +4,19 @@ import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { PermissionsGuard } from './permissions.guard';
+import { ApiKeysController } from './api-keys.controller';
+import { ApiKeysService } from './api-keys.service';
 
 @Module({
   imports: [JwtModule.register({})],
-  controllers: [AuthController],
-  providers: [AuthService, AuthGuard, PermissionsGuard],
-  exports: [AuthService, AuthGuard, PermissionsGuard, JwtModule],
+  controllers: [AuthController, ApiKeysController],
+  providers: [AuthService, AuthGuard, PermissionsGuard, ApiKeysService],
+  exports: [
+    AuthService,
+    AuthGuard,
+    PermissionsGuard,
+    ApiKeysService,
+    JwtModule,
+  ],
 })
 export class AuthModule {}

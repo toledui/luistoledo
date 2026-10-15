@@ -17,10 +17,17 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "../commerce.module.css";
+import { formatMxn, type PaidCourseOffer } from "@/lib/paid-course";
 type Methods = { stripeEnabled: boolean; bankTransferEnabled: boolean };
 type User = { email: string; firstName: string; lastName: string };
 type Result = { order: { id: string }; checkoutUrl?: string };
-export function CheckoutView() {
+export function CheckoutView({
+  program = false,
+  plan = "FULL",
+}: {
+  program?: boolean;
+  plan?: "FULL" | "INSTALLMENTS";
+}) {
   const cart = useCart();
   const router = useRouter();
   const [methods, setMethods] = useState<Methods | null>(null);
@@ -45,17 +52,36 @@ export function CheckoutView() {
   >("STRIPE");
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
+  const [offer, setOffer] = useState<PaidCourseOffer | null>(null);
+  const [paymentOption, setPaymentOption] = useState(plan);
+  const canPay =
+    !!methods &&
+    (methods.stripeEnabled || methods.bankTransferEnabled) &&
+    (program ? !!offer?.registrationOpen : cart.items.length > 0);
+  const amountNow = offer
+    ? paymentOption === "FULL"
+      ? offer.cashPrice
+      : offer.deposit
+    : 0;
+  useEffect(() => {
+    if (program)
+      void apiFetch<PaidCourseOffer>("/paid-course")
+        .then(setOffer)
+        .catch((e: Error) => setError(e.message));
+  }, [program]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("cancelled") === "1")
       router.replace("/mi-aprendizaje/pedidos?cancelled=1");
   }, [router]);
   useEffect(() => {
-    void apiFetch<Methods>("/payments/methods").then((m) => {
-      setMethods(m);
-      if (!m.stripeEnabled && m.bankTransferEnabled)
-        setPaymentMethod("BANK_TRANSFER");
-    });
+    void apiFetch<Methods>("/payments/methods")
+      .then((m) => {
+        setMethods(m);
+        if (!m.stripeEnabled && m.bankTransferEnabled)
+          setPaymentMethod("BANK_TRANSFER");
+      })
+      .catch((e: Error) => setError(e.message));
     void apiFetch<User>("/auth/me")
       .then((u) => {
         setUser(u);
@@ -164,27 +190,31 @@ export function CheckoutView() {
     );
   }
   async function pay() {
-    if (!cart.items.length) return;
+    if (!canPay) return;
     setPaying(true);
     setError("");
     try {
       await authenticate();
-      await apiFetch("/cart", { method: "DELETE" });
-      for (const item of cart.items)
-        await apiFetch("/cart/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ courseId: item.id }),
-        });
+      if (!program) {
+        await apiFetch("/cart", { method: "DELETE" });
+        for (const item of cart.items)
+          await apiFetch("/cart/items", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ courseId: item.id }),
+          });
+      }
       const result = await apiFetch<Result>("/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          couponCode: appliedCoupon || undefined,
+          ...(program
+            ? { program: "asistente-ia", paymentOption }
+            : { couponCode: appliedCoupon || undefined }),
           paymentMethod,
         }),
       });
-      cart.clear();
+      if (!program) cart.clear();
       if (result.checkoutUrl) {
         window.location.assign(result.checkoutUrl);
         return;
@@ -197,7 +227,7 @@ export function CheckoutView() {
       setPaying(false);
     }
   }
-  if (!methods)
+  if (!methods && !error)
     return (
       <main className={styles.state}>
         <LoaderCircle className={styles.spin} />
@@ -292,7 +322,7 @@ export function CheckoutView() {
             )}
             <h2>Método de pago</h2>
             <div className={styles.paymentMethods}>
-              {methods.stripeEnabled && (
+              {methods?.stripeEnabled && (
                 <label
                   className={
                     paymentMethod === "STRIPE" ? styles.selectedMethod : ""
@@ -310,7 +340,7 @@ export function CheckoutView() {
                   </span>
                 </label>
               )}
-              {methods.bankTransferEnabled && (
+              {methods?.bankTransferEnabled && (
                 <label
                   className={
                     paymentMethod === "BANK_TRANSFER"
@@ -331,55 +361,86 @@ export function CheckoutView() {
                 </label>
               )}
             </div>
-            <h2>
-              <Tag />
-              Cupón
-            </h2>
-            <div className={styles.coupon}>
-              <input
-                value={coupon}
-                onChange={(e) => {
-                  setCoupon(e.target.value.toUpperCase());
-                  if (
-                    appliedCoupon &&
-                    e.target.value.toUpperCase() !== appliedCoupon
-                  ) {
-                    setAppliedCoupon("");
-                    setCouponSummary(null);
-                    setCouponMessage(
-                      "Pulsa Aplicar para validar el nuevo código.",
-                    );
-                  }
-                }}
-                placeholder="CÓDIGO"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void applyCoupon();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => void applyCoupon()}
-                disabled={applyingCoupon || !coupon.trim()}
-              >
-                {applyingCoupon ? (
-                  <LoaderCircle className={styles.spin} />
-                ) : (
-                  "Aplicar"
+            {methods &&
+              !methods.stripeEnabled &&
+              !methods.bankTransferEnabled && (
+                <p role="alert">
+                  Los pagos no están disponibles por el momento. Contacta al
+                  equipo para inscribirte.
+                </p>
+              )}
+            {program ? (
+              <div className={styles.notice}>
+                <ReceiptText />
+                <div>
+                  <strong>Inscripción al programa en vivo</strong>
+                  <p>
+                    21 y 28 de noviembre y 5 de diciembre de 2026 · 9:00 a 13:00
+                    CDMX.
+                  </p>
+                  <p>
+                    Recibirás el grupo de WhatsApp por correo después de
+                    confirmar tu pago.
+                  </p>
+                  <p>Servidor y consumo de IA se contratan por separado.</p>
+                  {offer && !offer.registrationOpen && (
+                    <p role="alert">Las inscripciones están cerradas.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2>
+                  <Tag />
+                  Cupón
+                </h2>
+                <div className={styles.coupon}>
+                  <input
+                    value={coupon}
+                    onChange={(e) => {
+                      setCoupon(e.target.value.toUpperCase());
+                      if (
+                        appliedCoupon &&
+                        e.target.value.toUpperCase() !== appliedCoupon
+                      ) {
+                        setAppliedCoupon("");
+                        setCouponSummary(null);
+                        setCouponMessage(
+                          "Pulsa Aplicar para validar el nuevo código.",
+                        );
+                      }
+                    }}
+                    placeholder="CÓDIGO"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void applyCoupon();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void applyCoupon()}
+                    disabled={applyingCoupon || !coupon.trim()}
+                  >
+                    {applyingCoupon ? (
+                      <LoaderCircle className={styles.spin} />
+                    ) : (
+                      "Aplicar"
+                    )}
+                  </button>
+                </div>
+                {couponMessage && (
+                  <p
+                    className={
+                      appliedCoupon ? styles.couponSuccess : styles.couponError
+                    }
+                  >
+                    {appliedCoupon && <CheckCircle2 />}
+                    {couponMessage}
+                  </p>
                 )}
-              </button>
-            </div>
-            {couponMessage && (
-              <p
-                className={
-                  appliedCoupon ? styles.couponSuccess : styles.couponError
-                }
-              >
-                {appliedCoupon && <CheckCircle2 />}
-                {couponMessage}
-              </p>
+              </>
             )}
             {error && <p className={styles.error}>{error}</p>}
           </section>
@@ -388,41 +449,97 @@ export function CheckoutView() {
               <ReceiptText />
               Tu pedido
             </h2>
-            {cart.items.map((item) => (
-              <div className={styles.checkoutItem} key={item.id}>
-                <span>{item.title}</span>
-                <strong>
-                  $
-                  {Number(item.salePrice || item.price).toLocaleString("es-MX")}
-                </strong>
-                <button onClick={() => removeItem(item.id)}>
-                  <Trash2 />
-                </button>
+            {program ? (
+              <div className={styles.programSummary}>
+                <h3>
+                  {offer?.title ?? "Implementa tu Propio Asistente de IA 24/7"}
+                </h3>
+                <label>
+                  Plan de inscripción
+                  <select
+                    aria-label="Plan de inscripción"
+                    value={paymentOption}
+                    onChange={(e) =>
+                      setPaymentOption(
+                        e.target.value as "FULL" | "INSTALLMENTS",
+                      )
+                    }
+                    disabled={paying}
+                  >
+                    <option value="FULL">Pago de contado</option>
+                    <option value="INSTALLMENTS">
+                      Apartado + dos parcialidades
+                    </option>
+                  </select>
+                </label>
+                {!offer ? (
+                  <p>Cargando precios…</p>
+                ) : paymentOption === "FULL" ? (
+                  <p>
+                    Un solo pago de{" "}
+                    <strong>{formatMxn(offer.cashPrice)}</strong>.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Hoy pagas <strong>{formatMxn(offer.deposit)}</strong>.
+                      Después, dos pagos de{" "}
+                      <strong>{formatMxn(offer.installmentAmount)}</strong>.
+                    </p>
+                    <p>
+                      Total del programa:{" "}
+                      <strong>{formatMxn(offer.installmentTotal)}</strong>
+                    </p>
+                    <p>
+                      Vencimientos: 21 y 28 de noviembre de 2026, 9:00 a. m.
+                      CDMX. Las dos órdenes se generan al confirmar tu apartado.
+                    </p>
+                    <p>
+                      Sin cargos automáticos. Recibirás como máximo un
+                      recordatorio por semana.
+                    </p>
+                  </>
+                )}
               </div>
-            ))}
-            {!cart.items.length && <p>No hay cursos seleccionados.</p>}
-            {couponSummary && (
-              <p className={styles.discount}>
-                <span>Descuento · {appliedCoupon}</span>
-                <strong>
-                  −${Number(couponSummary.discount).toLocaleString("es-MX")} MXN
-                </strong>
-              </p>
+            ) : (
+              <>
+                {cart.items.map((item) => (
+                  <div className={styles.checkoutItem} key={item.id}>
+                    <span>{item.title}</span>
+                    <strong>
+                      $
+                      {Number(item.salePrice || item.price).toLocaleString(
+                        "es-MX",
+                      )}
+                    </strong>
+                    <button onClick={() => removeItem(item.id)}>
+                      <Trash2 />
+                    </button>
+                  </div>
+                ))}
+                {!cart.items.length && <p>No hay cursos seleccionados.</p>}
+                {couponSummary && (
+                  <p className={styles.discount}>
+                    <span>Descuento · {appliedCoupon}</span>
+                    <strong>
+                      −${Number(couponSummary.discount).toLocaleString("es-MX")}{" "}
+                      MXN
+                    </strong>
+                  </p>
+                )}
+              </>
             )}
             <p className={styles.total}>
-              <span>Total</span>
+              <span>{program ? "A pagar hoy" : "Total"}</span>
               <strong>
                 $
-                {Number(couponSummary?.total ?? cart.total).toLocaleString(
-                  "es-MX",
-                )}{" "}
+                {Number(
+                  program ? amountNow : (couponSummary?.total ?? cart.total),
+                ).toLocaleString("es-MX")}{" "}
                 MXN
               </strong>
             </p>
-            <button
-              onClick={() => void pay()}
-              disabled={paying || !cart.items.length}
-            >
+            <button onClick={() => void pay()} disabled={paying || !canPay}>
               {paying ? (
                 <LoaderCircle className={styles.spin} />
               ) : (

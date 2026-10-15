@@ -1,0 +1,130 @@
+.page {
+  display: grid;
+  gap: 25px;
+}
+.page header > span {
+  color: #7352a0;
+  font-size: 12px;
+}
+.page h1 {
+  margin: 10px 0;
+  font-size: clamp(28px, 4vw, 42px);
+}
+.page p {
+  color: #657184;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+.summary article {
+  display: grid;
+  gap: 12px;
+  background: white;
+  border: 1px solid #dfe6ee;
+  border-radius: 13px;
+  padding: 22px;
+}
+.summary span {
+  color: #657184;
+  font-size: 12px;
+}
+.summary strong {
+  font-size: 25px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.filters input,
+.filters select {
+  border: 1px solid #cad3df;
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+}
+.filters input {
+  flex: 1;
+  min-width: 180px;
+}
+.page button {
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background: #102238;
+  color: white;
+  cursor: pointer;
+}
+.page button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.plan {
+  background: white;
+  border: 1px solid #dfe6ee;
+  border-radius: 14px;
+  padding: 25px;
+}
+.plan header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 14px;
+}
+.plan h2 {
+  font-size: 20px;
+  margin: 0;
+}
+.plan header p {
+  margin: 6px 0;
+}
+.plan header > strong {
+  font-size: 11px;
+  padding: 8px;
+  border-radius: 7px;
+  background: #f1ebf9;
+  color: #69458b;
+}
+.orderList {
+  margin: 20px 0;
+}
+.orderList > div {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr 1.3fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e9edf3;
+  font-size: 11px;
+}
+.page footer {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .summary article {
+    padding: 16px;
+  }
+  .summary strong {
+    font-size: 20px;
+  }
+  .plan header {
+    display: block;
+  }
+  .plan header > strong {
+    display: inline-block;
+    margin-top: 8px;
+  }
+  .orderList > div {
+    grid-template-columns: 1fr 1fr;
+  }
+}

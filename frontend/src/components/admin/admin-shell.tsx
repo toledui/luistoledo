@@ -41,6 +41,7 @@ const navigation = [
   { href: "/admin/medios", label: "Medios", icon: Images },
   { href: "/admin/contacto", label: "Contacto", icon: MessageSquare },
   { href: "/admin/masterclass", label: "Masterclass", icon: Users },
+  { href: "/admin/inscripciones-ia", label: "Curso de IA", icon: BookOpen },
   {
     href: "/admin/configuracion",
     label: "Configuración",

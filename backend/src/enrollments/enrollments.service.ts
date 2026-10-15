@@ -25,6 +25,7 @@ export class EnrollmentsService {
     return this.prisma.course.findMany({
       where: {
         status: CourseStatus.PUBLISHED,
+        isListed: true,
         ...(query.search
           ? {
               OR: [
@@ -47,7 +48,9 @@ export class EnrollmentsService {
   }
   categories() {
     return this.prisma.category.findMany({
-      where: { courses: { some: { status: CourseStatus.PUBLISHED } } },
+      where: {
+        courses: { some: { status: CourseStatus.PUBLISHED, isListed: true } },
+      },
       orderBy: { name: 'asc' },
     });
   }

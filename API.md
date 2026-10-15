@@ -26,6 +26,33 @@ npm run start:dev --prefix backend
 
 ## Formato y autenticación
 
+### Curso en vivo: contado y parcialidades
+
+- Landing no listada: `/implementa-tu-asistente-ia`, excluida del catálogo público y marcada `noindex`.
+- Oferta pública sin enlace de WhatsApp: `GET /paid-course`. Sesiones: 21 y 28 de noviembre y 5 de diciembre de 2026, 9:00–13:00 CDMX. Cierre de nuevas inscripciones: 18 de noviembre, 23:59:59 CDMX.
+- `POST /checkout` admite `{ "program": "asistente-ia", "paymentOption": "FULL" | "INSTALLMENTS", "paymentMethod": "STRIPE" | "BANK_TRANSFER" }` con sesión del alumno. Reutiliza cuentas y checkout existentes, sin modificar el carrito normal. Importes fijados en el backend: $1,790 contado o $500 de apartado y dos órdenes de $990 (total $2,480). No admite cupones para esta oferta.
+- Confirmar el pago inicial activa la inscripción y encola el correo de bienvenida con WhatsApp y el aviso administrativo en la misma transacción. En parcialidades se crean las órdenes 2 y 3 con vencimiento el 21 y 28 de noviembre a las 9:00 CDMX. Stripe y transferencias usan una confirmación atómica compartida para evitar duplicados. Los pagos restantes son manuales; no son cargos recurrentes de Stripe.
+- `GET /orders` y `GET /orders/:id` incluyen `paymentPlan`, `installmentNumber` y `dueAt`. `POST /orders/:id/resume-payment` inicia o recupera una sesión Stripe de esa orden. `PATCH /paid-course/reminders` con `{ "remindersEnabled": false }` permite al alumno pausar sus avisos.
+- Administración/MCP, con `orders.manage`: `GET /admin/paid-course/summary`, `GET /admin/paid-course/plans`, `GET /admin/paid-course/plans/:id`, `PATCH /admin/paid-course/plans/:id/reminders`, `POST /admin/paid-course/checkout`. El listado acepta `page`, `limit`, `search`, `option` y `state`. `GET /admin/orders/search` también acepta `paymentPlanId`.
+- Panel administrativo: `/admin/inscripciones-ia`. Se conservan las herramientas de aprobación de transferencias existentes.
+- Recordatorios: cron de la aplicación a las 10:00 CDMX, como máximo un resumen cada 7 días por plan activo con saldo vencido o próximo (7 días). Se detienen al liquidar o al pausarlos. Los correos pendientes se revalidan antes de enviarse; una cola de recordatorio antigua se cancela si ya se pagó o se pausó. Es necesario mantener el backend activo.
+
+Aplicar migraciones con `npm run db:deploy` al desplegar y reiniciar el backend y MCP. Validación adicional con MySQL local: `npm run test:paid-course:integration --prefix backend`, que revierte todos sus datos de prueba y no envía correos.
+
+### Agentes, API keys y Hermes MCP
+
+Las claves se crean y revocan en **Configuración → API y agentes** (`/admin/configuracion/api`). Se envían como `Authorization: Bearer lta_...` a las rutas administrativas. Cada área tiene permisos de lectura y escritura independientes, con expiración opcional. El secreto se muestra solo al crearlo; únicamente se guarda su hash. Los permisos también dependen de los permisos actuales y del estado activo de su propietario.
+
+La gestión de claves usa `GET /admin/settings/api-keys`, `GET /admin/settings/api-keys/scopes`, `POST /admin/settings/api-keys` y `POST /admin/settings/api-keys/:id/revoke`; requiere sesión web y `settings.manage`. El cuerpo de creación contiene `name`, `scopes` y opcionalmente `expiresAt` en ISO 8601.
+
+Se añade `POST /admin/users` para crear alumnos activos con `email`, `firstName`, `lastName` y `password`. No se conceden roles administrativos ni se marca el correo como verificado. Las claves no pueden administrar roles ni sesiones.
+
+Para pedidos completos, usar `GET /admin/orders/search?page=1&limit=25`, con filtros opcionales `status`, `userId`, `search` (número o correo), y total en `pagination.total`. `GET /admin/orders/:id` obtiene el detalle. La ruta existente `GET /admin/orders` conserva su lista de los últimos 200 pedidos.
+
+La consulta de registros de masterclass admite `eventKey` opcional para consultar otros eventos; sin él se usa el evento actual. El campo `total` siempre cuenta la consulta completa, no solo la página.
+
+El servidor MCP y las instrucciones verificadas para Hermes están en [mcp/README.md](./mcp/README.md). El MCP descubre las operaciones y sus esquemas desde `/api/docs-json`; las cargas multipart siguen disponibles por REST.
+
 ### Registro de masterclass
 
 La landing pública está en `/masterclass` y la bandeja administrativa en `/admin/masterclass`.

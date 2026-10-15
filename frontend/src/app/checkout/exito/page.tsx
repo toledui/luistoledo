@@ -15,6 +15,8 @@ type Order = {
   status: string;
   total: string;
   items: { title: string }[];
+  paymentPlanId?: string | null;
+  installmentNumber?: number | null;
 };
 function Success() {
   const id = useSearchParams().get("order");
@@ -92,6 +94,13 @@ function Success() {
           <strong key={item.title}>{item.title}</strong>
         ))}
       </div>
+      {order.paymentPlanId && (
+        <p>
+          {order.installmentNumber === 1
+            ? "Tu inscripción está confirmada. Enviamos a tu correo los detalles y el grupo de WhatsApp. Si elegiste parcialidades, las dos órdenes restantes ya aparecen en Mis pedidos."
+            : "Registramos tu parcialidad. Consulta el estado de tu plan en Mis pedidos."}
+        </p>
+      )}
       <Link href="/mi-aprendizaje">Ir a mi aprendizaje</Link>
       <Link href="/mi-aprendizaje/pedidos">Ver pedido</Link>
     </main>

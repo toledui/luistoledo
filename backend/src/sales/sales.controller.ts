@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
@@ -25,10 +26,24 @@ import {
   UpdatePaymentSettingsDto,
 } from './dto/sales.dto';
 import { SalesService } from './sales.service';
+import { ListOrdersDto } from './dto/list-orders.dto';
+import { CreatePaidCourseCheckoutDto } from '../paid-course/paid-course.dto';
 
 @Controller()
 export class SalesController {
   constructor(private readonly sales: SalesService) {}
+  @Post('admin/paid-course/checkout')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('orders.manage')
+  paidCourseCheckout(@Body() dto: CreatePaidCourseCheckoutDto) {
+    return this.sales.checkout(
+      dto.userId,
+      dto.paymentMethod,
+      undefined,
+      'asistente-ia',
+      dto.paymentOption,
+    );
+  }
   @Get('cart') @UseGuards(AuthGuard) cart(@Req() req: AuthenticatedRequest) {
     return this.sales.cart(req.auth.sub);
   }
@@ -56,7 +71,13 @@ export class SalesController {
     @Body() dto: CheckoutDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.sales.checkout(req.auth.sub, dto.paymentMethod, dto.couponCode);
+    return this.sales.checkout(
+      req.auth.sub,
+      dto.paymentMethod,
+      dto.couponCode,
+      dto.program,
+      dto.paymentOption,
+    );
   }
   @Post('payments/stripe/confirm')
   @UseGuards(AuthGuard)
@@ -127,6 +148,18 @@ export class SalesController {
   @RequirePermissions('orders.manage')
   adminOrders() {
     return this.sales.adminOrders();
+  }
+  @Get('admin/orders/search')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('orders.manage')
+  searchOrders(@Query() query: ListOrdersDto) {
+    return this.sales.searchOrders(query);
+  }
+  @Get('admin/orders/:id')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('orders.manage')
+  adminOrder(@Param('id') id: string) {
+    return this.sales.adminOrder(id);
   }
   @Post('admin/coupons')
   @UseGuards(AuthGuard, PermissionsGuard)

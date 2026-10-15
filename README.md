@@ -7,6 +7,7 @@ Sistema LMS y de comercio electrónico para cursos en línea.
 - [Avances y estado del proyecto](./AVANCES.md)
 - [Manual de despliegue sin Docker](./DEPLOY.md)
 - [Manual de API y Swagger](./API.md)
+- [API keys y conexión MCP para Hermes](./mcp/README.md)
 
 ## Desarrollo local
 

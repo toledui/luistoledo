@@ -17,11 +17,15 @@ import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 @Controller('admin/users')
 @UseGuards(AuthGuard, PermissionsGuard)
 @RequirePermissions('users.manage')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
+  @Post() create(@Body() dto: CreateUserDto, @Req() req: AuthenticatedRequest) {
+    return this.users.create(dto, req.auth.sub);
+  }
   @Get() list(@Query() query: ListUsersDto) {
     return this.users.list(query);
   }

@@ -129,6 +129,24 @@ model User {
   orders                  Order[]
   couponRedemptions       CouponRedemption[]
   profile                 Profile?
+  apiKeys                 ApiKey[]
+  coursePaymentPlans      CoursePaymentPlan[]
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String    @db.VarChar(100)
+  prefix     String    @db.VarChar(20)
+  tokenHash  String    @unique @db.VarChar(64)
+  scopes     Json
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model Profile {
@@ -500,6 +518,7 @@ model Course {
   salePrice        Decimal?        @db.Decimal(10, 2)
   estimatedMinutes Int             @default(0)
   featured         Boolean         @default(false)
+  isListed         Boolean         @default(true)
   categoryId       String?
   category         Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   coverMediaId     String?
@@ -515,6 +534,7 @@ model Course {
   cartItems        CartItem[]
   orderItems       OrderItem[]
   couponCourses    CouponCourse[]
+  paymentPlans     CoursePaymentPlan[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -630,11 +650,39 @@ model Order {
   payments    Payment[]
   redemptions CouponRedemption[]
   paidAt      DateTime?
+  paymentPlanId String?
+  paymentPlan CoursePaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: Restrict)
+  installmentNumber Int?
+  dueAt DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+  @@unique([paymentPlanId, installmentNumber])
+  @@index([dueAt, status])
+}
+
+model CoursePaymentPlan {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  option            String   @db.VarChar(20)
+  total             Decimal  @db.Decimal(10, 2)
+  initialAmount     Decimal  @db.Decimal(10, 2)
+  installmentAmount Decimal  @db.Decimal(10, 2)
+  activatedAt       DateTime?
+  completedAt       DateTime?
+  remindersEnabled  Boolean  @default(true)
+  lastReminderAt    DateTime?
+  orders            Order[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([activatedAt, completedAt, lastReminderAt])
 }
 
 model OrderItem {

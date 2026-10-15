@@ -18,6 +18,8 @@ import { EncryptionService } from '../crypto/encryption.service';
 import { EmailTemplateService } from '../email-templates/email-template.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCouponDto, UpdatePaymentSettingsDto } from './dto/sales.dto';
+import { ListOrdersDto } from './dto/list-orders.dto';
+import { PaidCourseService } from '../paid-course/paid-course.service';
 
 @Injectable()
 export class SalesService {
@@ -26,7 +28,63 @@ export class SalesService {
     private readonly encryption: EncryptionService,
     private readonly config: ConfigService,
     private readonly emailTemplates: EmailTemplateService,
+    private readonly paidCourse: PaidCourseService,
   ) {}
+
+  private orderInclude() {
+    return {
+      user: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+      items: true,
+      payments: true,
+      paymentPlan: true,
+    } as const;
+  }
+
+  async adminOrder(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: this.orderInclude(),
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    return order;
+  }
+
+  async searchOrders(query: ListOrdersDto) {
+    const where: Prisma.OrderWhereInput = {
+      ...(query.paymentPlanId ? { paymentPlanId: query.paymentPlanId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.userId ? { userId: query.userId } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { number: { contains: query.search } },
+              { user: { email: { contains: query.search } } },
+            ],
+          }
+        : {}),
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where,
+        include: this.orderInclude(),
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return {
+      items,
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / query.limit)),
+      },
+    };
+  }
 
   private async sendPurchaseEmails(
     userId: string,
@@ -146,28 +204,39 @@ export class SalesService {
       'FRONTEND_URL',
       'http://localhost:3000',
     );
-    const session = await client.checkout.sessions.create({
-      mode: 'payment',
-      client_reference_id: order.id,
-      metadata: { orderId: order.id, userId: order.userId },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: order.currency.toLowerCase(),
-            unit_amount: Math.round(Number(order.total) * 100),
-            product_data: {
-              name:
-                order.items.length === 1
-                  ? order.items[0].title
-                  : `${order.items.length} cursos · Luis Toledo Academy`,
+    const pending = await this.prisma.payment.findFirst({
+      where: {
+        orderId: order.id,
+        provider: 'STRIPE',
+        status: PaymentStatus.PENDING,
+      },
+      select: { externalId: true },
+    });
+    const session = await client.checkout.sessions.create(
+      {
+        mode: 'payment',
+        client_reference_id: order.id,
+        metadata: { orderId: order.id, userId: order.userId },
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: order.currency.toLowerCase(),
+              unit_amount: Math.round(Number(order.total) * 100),
+              product_data: {
+                name:
+                  order.items.length === 1
+                    ? order.items[0].title
+                    : `${order.items.length} cursos · Luis Toledo Academy`,
+              },
             },
           },
-        },
-      ],
-      success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}${cancelPath}`,
-    });
+        ],
+        success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${frontendUrl}${cancelPath}`,
+      },
+      { idempotencyKey: `lta-${order.id}-${pending?.externalId ?? 'initial'}` },
+    );
     if (!session.url)
       throw new BadRequestException('Stripe no devolvió una URL de pago');
     await this.prisma.payment.updateMany({
@@ -229,7 +298,7 @@ export class SalesService {
   }
   async add(userId: string, courseId: string) {
     const course = await this.prisma.course.findFirst({
-      where: { id: courseId, status: CourseStatus.PUBLISHED },
+      where: { id: courseId, status: CourseStatus.PUBLISHED, isListed: true },
     });
     if (!course) throw new NotFoundException('Curso no disponible');
     if (Number(course.salePrice ?? course.price) <= 0)
@@ -334,6 +403,8 @@ export class SalesService {
     userId: string,
     paymentMethod: 'STRIPE' | 'BANK_TRANSFER',
     couponCode?: string,
+    program?: 'asistente-ia',
+    paymentOption?: 'FULL' | 'INSTALLMENTS',
   ) {
     const paymentSettings = await this.paymentSettingsRecord();
     if (paymentMethod === 'STRIPE' && !paymentSettings.stripeEnabled)
@@ -345,6 +416,24 @@ export class SalesService {
       throw new BadRequestException(
         'La transferencia bancaria no está disponible',
       );
+    if (program) {
+      if (!paymentOption)
+        throw new BadRequestException('Selecciona contado o parcialidades');
+      if (couponCode)
+        throw new BadRequestException(
+          'Esta oferta tiene precios especiales y no admite cupones',
+        );
+      const order = await this.paidCourse.createInitialOrder(
+        userId,
+        paymentOption,
+        paymentMethod,
+      );
+      if (paymentMethod === 'BANK_TRANSFER') return { order, paymentMethod };
+      const resumed = await this.resumePayment(userId, order.id);
+      return { order, paymentMethod, checkoutUrl: resumed.checkoutUrl };
+    }
+    if (paymentOption)
+      throw new BadRequestException('El plan de pago requiere un programa');
     const calculated = await this.cart(userId, couponCode);
     if (!calculated.items.length)
       throw new BadRequestException('El carrito está vacío');
@@ -437,72 +526,137 @@ export class SalesService {
     }
   }
 
-  async approveBankTransfer(orderId: string) {
-    const order = await this.prisma.order.findFirst({
+  private async completePayment(
+    orderId: string,
+    paymentId: string,
+    provider: 'STRIPE' | 'BANK_TRANSFER',
+    externalId: string,
+  ) {
+    const order = await this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
       include: { items: true, payments: true },
     });
-    if (!order) throw new NotFoundException('Pedido no encontrado');
-    if (order.status === OrderStatus.PAID) return order;
-    const payment = order.payments.find(
-      (item) => item.provider === 'BANK_TRANSFER',
-    );
-    if (!payment || payment.status !== PaymentStatus.PENDING)
-      throw new BadRequestException('El pago no puede confirmarse');
-    await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: { id: payment.id },
+    const confirmed = await this.prisma.$transaction(async (tx) => {
+      // Serialize payments of the same plan before reading its remaining balance.
+      if (order.paymentPlanId)
+        await tx.coursePaymentPlan.update({
+          where: { id: order.paymentPlanId },
+          data: { updatedAt: new Date() },
+        });
+      const claimed = await tx.order.updateMany({
+        where: {
+          id: order.id,
+          status: {
+            in: [
+              OrderStatus.PENDING,
+              OrderStatus.AWAITING_PAYMENT,
+              OrderStatus.FAILED,
+            ],
+          },
+        },
+        data: { status: OrderStatus.PAID, paidAt: new Date() },
+      });
+      if (!claimed.count) {
+        const current = await tx.order.findUniqueOrThrow({
+          where: { id: order.id },
+        });
+        if (current.status === OrderStatus.PAID) return false;
+        throw new BadRequestException(
+          'Este pedido no admite confirmar el pago',
+        );
+      }
+      const payment = await tx.payment.updateMany({
+        where: {
+          id: paymentId,
+          orderId: order.id,
+          provider,
+          status: PaymentStatus.PENDING,
+        },
         data: {
           status: PaymentStatus.SUCCEEDED,
           processedAt: new Date(),
-          externalId: `bank-${order.id}`,
+          externalId,
         },
       });
-      await tx.order.update({
-        where: { id: order.id },
-        data: { status: OrderStatus.PAID, paidAt: new Date() },
-      });
-      for (const item of order.items)
-        await tx.enrollment.upsert({
-          where: {
-            userId_courseId: {
+      if (!payment.count)
+        throw new BadRequestException(
+          'El pago pendiente no corresponde al pedido',
+        );
+      await this.paidCourse.onPaid(tx, order, provider);
+      if (!order.paymentPlanId || order.installmentNumber === 1) {
+        for (const item of order.items)
+          await tx.enrollment.upsert({
+            where: {
+              userId_courseId: {
+                userId: order.userId,
+                courseId: item.courseId,
+              },
+            },
+            update: {
+              status: EnrollmentStatus.ACTIVE,
+              source: order.paymentPlanId ? 'PAID_COURSE' : 'PURCHASE',
+            },
+            create: {
               userId: order.userId,
               courseId: item.courseId,
+              status: EnrollmentStatus.ACTIVE,
+              source: order.paymentPlanId ? 'PAID_COURSE' : 'PURCHASE',
             },
-          },
-          update: { status: EnrollmentStatus.ACTIVE, source: 'PURCHASE' },
-          create: {
-            userId: order.userId,
-            courseId: item.courseId,
-            status: EnrollmentStatus.ACTIVE,
-            source: 'PURCHASE',
-          },
-        });
+          });
+      }
       if (order.couponId) {
         await tx.coupon.update({
           where: { id: order.couponId },
           data: { redemptionCount: { increment: 1 } },
         });
-        await tx.couponRedemption.create({
-          data: {
+        await tx.couponRedemption.upsert({
+          where: {
+            couponId_orderId: { couponId: order.couponId, orderId: order.id },
+          },
+          update: {},
+          create: {
             couponId: order.couponId,
             userId: order.userId,
             orderId: order.id,
           },
         });
       }
-      await tx.cartItem.deleteMany({
-        where: { cart: { userId: order.userId } },
-      });
+      if (!order.paymentPlanId)
+        await tx.cartItem.deleteMany({
+          where: { cart: { userId: order.userId } },
+        });
+      return true;
     });
-    const updatedOrder = await this.prisma.order.findUniqueOrThrow({
-      where: { id: orderId },
+    const updated = await this.prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
       include: { items: true, payments: true },
     });
-    await this.sendPurchaseEmails(order.userId, updatedOrder, true).catch(
-      () => undefined,
+    if (confirmed && !order.paymentPlanId)
+      await this.sendPurchaseEmails(order.userId, updated, true).catch(
+        () => undefined,
+      );
+    return updated;
+  }
+
+  async approveBankTransfer(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: true },
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    if (order.status === OrderStatus.PAID) return order;
+    const payment = order.payments.find(
+      (item) =>
+        item.provider === 'BANK_TRANSFER' &&
+        item.status === PaymentStatus.PENDING,
     );
-    return updatedOrder;
+    if (!payment) throw new BadRequestException('El pago no puede confirmarse');
+    return this.completePayment(
+      order.id,
+      payment.id,
+      'BANK_TRANSFER',
+      'bank-' + order.id,
+    );
   }
 
   async confirmStripeCheckout(
@@ -539,67 +693,7 @@ export class SalesService {
     if (session.amount_total !== Math.round(Number(order.total) * 100))
       throw new BadRequestException('El importe de Stripe no coincide');
 
-    const confirmed = await this.prisma.$transaction(async (tx) => {
-      const claimed = await tx.order.updateMany({
-        where: { id: order.id, status: { not: OrderStatus.PAID } },
-        data: { status: OrderStatus.PAID, paidAt: new Date() },
-      });
-      if (!claimed.count) return false;
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.SUCCEEDED,
-          processedAt: new Date(),
-          externalId: session.id,
-        },
-      });
-      for (const item of order.items)
-        await tx.enrollment.upsert({
-          where: {
-            userId_courseId: {
-              userId: order.userId,
-              courseId: item.courseId,
-            },
-          },
-          update: { status: EnrollmentStatus.ACTIVE, source: 'PURCHASE' },
-          create: {
-            userId: order.userId,
-            courseId: item.courseId,
-            status: EnrollmentStatus.ACTIVE,
-            source: 'PURCHASE',
-          },
-        });
-      if (order.couponId) {
-        await tx.coupon.update({
-          where: { id: order.couponId },
-          data: { redemptionCount: { increment: 1 } },
-        });
-        await tx.couponRedemption.upsert({
-          where: {
-            couponId_orderId: { couponId: order.couponId, orderId: order.id },
-          },
-          update: {},
-          create: {
-            couponId: order.couponId,
-            userId: order.userId,
-            orderId: order.id,
-          },
-        });
-      }
-      await tx.cartItem.deleteMany({
-        where: { cart: { userId: order.userId } },
-      });
-      return true;
-    });
-    const updated = await this.prisma.order.findUniqueOrThrow({
-      where: { id: order.id },
-      include: { items: true, payments: true },
-    });
-    if (confirmed)
-      await this.sendPurchaseEmails(order.userId, updated, true).catch(
-        () => undefined,
-      );
-    return updated;
+    return this.completePayment(order.id, payment.id, 'STRIPE', session.id);
   }
 
   async processStripeWebhook(signature: string | undefined, rawBody: Buffer) {
@@ -617,7 +711,6 @@ export class SalesService {
     } catch {
       throw new BadRequestException('Firma de webhook inválida');
     }
-
     const existing = await this.prisma.paymentEvent.findUnique({
       where: { externalEventId: event.id },
     });
@@ -634,88 +727,43 @@ export class SalesService {
         orderId: orderId || null,
       },
     });
-
     if (
-      event.type !== 'checkout.session.completed' ||
-      session.payment_status !== 'paid' ||
-      !orderId
+      [
+        'checkout.session.completed',
+        'checkout.session.async_payment_succeeded',
+      ].includes(event.type) &&
+      session.payment_status === 'paid' &&
+      orderId
     ) {
-      await this.prisma.paymentEvent.update({
-        where: { externalEventId: event.id },
-        data: { processed: true, processedAt: new Date() },
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { payments: true },
       });
-      return { received: true };
-    }
-
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true, payments: true },
-    });
-    if (!order) throw new NotFoundException('Pedido de Stripe no encontrado');
-    if (session.amount_total !== Math.round(Number(order.total) * 100))
-      throw new BadRequestException('El importe de Stripe no coincide');
-
-    await this.prisma.$transaction(async (tx) => {
-      if (order.status !== OrderStatus.PAID) {
-        const payment = order.payments.find(
-          (item) => item.provider === 'STRIPE',
+      if (!order) throw new NotFoundException('Pedido de Stripe no encontrado');
+      if (
+        session.amount_total !== Math.round(Number(order.total) * 100) ||
+        session.currency?.toUpperCase() !== order.currency ||
+        session.metadata?.userId !== order.userId
+      )
+        throw new BadRequestException(
+          'Los datos del pago de Stripe no coinciden',
         );
-        if (!payment) throw new BadRequestException('Pago de Stripe ausente');
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.SUCCEEDED,
-            processedAt: new Date(),
-            externalId: session.id,
-          },
-        });
-        await tx.order.update({
-          where: { id: order.id },
-          data: { status: OrderStatus.PAID, paidAt: new Date() },
-        });
-        for (const item of order.items)
-          await tx.enrollment.upsert({
-            where: {
-              userId_courseId: {
-                userId: order.userId,
-                courseId: item.courseId,
-              },
-            },
-            update: { status: EnrollmentStatus.ACTIVE, source: 'PURCHASE' },
-            create: {
-              userId: order.userId,
-              courseId: item.courseId,
-              status: EnrollmentStatus.ACTIVE,
-              source: 'PURCHASE',
-            },
-          });
-        if (order.couponId) {
-          await tx.coupon.update({
-            where: { id: order.couponId },
-            data: { redemptionCount: { increment: 1 } },
-          });
-          await tx.couponRedemption.create({
-            data: {
-              couponId: order.couponId,
-              userId: order.userId,
-              orderId: order.id,
-            },
-          });
-        }
-        await tx.cartItem.deleteMany({
-          where: { cart: { userId: order.userId } },
-        });
-      }
-      await tx.paymentEvent.update({
-        where: { externalEventId: event.id },
-        data: { processed: true, processedAt: new Date() },
-      });
+      const payment = order.payments.find(
+        (item) => item.provider === 'STRIPE' && item.externalId === session.id,
+      );
+      if (!payment)
+        throw new BadRequestException(
+          'La sesión de Stripe no corresponde al pedido',
+        );
+      await this.completePayment(order.id, payment.id, 'STRIPE', session.id);
+    }
+    await this.prisma.paymentEvent.update({
+      where: { externalEventId: event.id },
+      data: { processed: true, processedAt: new Date() },
     });
-    await this.sendPurchaseEmails(order.userId, order, true).catch(
-      () => undefined,
-    );
     return { received: true };
   }
+
   orders(userId: string) {
     return this.prisma.order.findMany({
       where: { userId },
@@ -723,6 +771,7 @@ export class SalesService {
       include: {
         items: { include: { course: { select: { slug: true } } } },
         payments: true,
+        paymentPlan: true,
       },
     });
   }
@@ -732,7 +781,11 @@ export class SalesService {
       include: { items: true, payments: true },
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
-    if (order.status !== OrderStatus.PENDING)
+    if (
+      ![OrderStatus.PENDING, OrderStatus.FAILED].includes(
+        order.status as 'PENDING' | 'FAILED',
+      )
+    )
       throw new BadRequestException(
         order.status === OrderStatus.PAID
           ? 'Este pedido ya fue pagado'
@@ -746,16 +799,48 @@ export class SalesService {
       throw new BadRequestException('El pago pendiente de Stripe no existe');
 
     const { client } = await this.stripeClient();
+    if (order.status === OrderStatus.FAILED)
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.PENDING },
+      });
     if (payment.externalId) {
+      let previous: Stripe.Checkout.Session | undefined;
       try {
-        const previous = await client.checkout.sessions.retrieve(
-          payment.externalId,
-        );
-        if (previous.status === 'open' && previous.url)
-          return { orderId: order.id, checkoutUrl: previous.url };
-      } catch {
-        // Una sesión vencida o eliminada no impide crear una nueva.
+        previous = await client.checkout.sessions.retrieve(payment.externalId);
+      } catch (error) {
+        // Only a missing Stripe session permits replacement. Network/auth errors must not create another charge opportunity.
+        if (
+          !(error instanceof Stripe.errors.StripeInvalidRequestError) ||
+          error.code !== 'resource_missing'
+        )
+          throw error;
       }
+      if (
+        previous?.status === 'complete' &&
+        previous.payment_status === 'paid'
+      ) {
+        await this.confirmStripeCheckout(userId, order.id, previous.id);
+        const front = this.config.get<string>(
+          'FRONTEND_URL',
+          'http://localhost:3000',
+        );
+        return {
+          orderId: order.id,
+          checkoutUrl:
+            front +
+            '/checkout/exito?order=' +
+            encodeURIComponent(order.id) +
+            '&session_id=' +
+            encodeURIComponent(previous.id),
+        };
+      }
+      if (previous?.status === 'open' && previous.url)
+        return { orderId: order.id, checkoutUrl: previous.url };
+      if (previous?.status === 'complete')
+        throw new BadRequestException(
+          'Stripe aún está procesando este pago. Espera su confirmación.',
+        );
     }
     const checkoutUrl = await this.createStripeCheckoutSession(
       order,
@@ -770,6 +855,7 @@ export class SalesService {
       include: {
         items: { include: { course: { select: { slug: true } } } },
         payments: true,
+        paymentPlan: true,
       },
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
@@ -785,6 +871,7 @@ export class SalesService {
         user: { select: { firstName: true, lastName: true, email: true } },
         items: true,
         payments: true,
+        paymentPlan: true,
       },
       take: 200,
     });

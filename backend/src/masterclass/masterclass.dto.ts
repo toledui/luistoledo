@@ -44,6 +44,7 @@ export class RegisterMasterclassDto {
 }
 
 export class ListMasterclassDto {
+  @IsOptional() @IsString() @MaxLength(80) eventKey?: string;
   @Type(() => Number) @IsInt() @Min(1) page = 1;
   @Type(() => Number) @IsInt() @Min(1) @Max(100) limit = 25;
   @IsOptional() @IsString() @MaxLength(160) search?: string;

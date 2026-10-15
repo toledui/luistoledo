@@ -7,13 +7,14 @@
     "dev": "concurrently --kill-others-on-fail --names frontend,backend --prefix-colors cyan,magenta \"npm run dev --prefix frontend\" \"npm run start:dev --prefix backend\"",
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
     "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
-    "test": "npm run test --prefix frontend && npm run test --prefix backend -- --runInBand",
+    "test": "npm run test --prefix frontend && npm run test --prefix backend -- --runInBand && npm run test --prefix mcp",
+    "mcp": "npm start --prefix mcp",
     "db:generate": "npm run prisma:generate --prefix backend",
     "db:migrate": "npm run prisma:migrate --prefix backend",
     "db:deploy": "npm run prisma:deploy --prefix backend",
     "db:status": "npm run prisma:status --prefix backend",
     "db:seed": "npm run prisma:seed --prefix backend",
-    "setup": "npm install --prefix frontend && npm install --prefix backend && npm run db:generate && npm run db:deploy && npm run db:seed"
+    "setup": "npm install --prefix frontend && npm install --prefix backend && npm install --prefix mcp && npm run db:generate && npm run db:deploy && npm run db:seed"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

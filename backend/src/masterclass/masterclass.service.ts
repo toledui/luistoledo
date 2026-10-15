@@ -140,7 +140,7 @@ export class MasterclassService {
   async list(query: ListMasterclassDto) {
     const search = query.search?.trim();
     const where: Prisma.MasterclassRegistrationWhereInput = {
-      eventKey: MASTERCLASS.key,
+      eventKey: query.eventKey ?? MASTERCLASS.key,
       ...(search
         ? {
             OR: [
@@ -177,7 +177,11 @@ export class MasterclassService {
       page: query.page,
       limit: query.limit,
       recipientConfigured: Boolean(recipient),
-      event: MASTERCLASS,
+      eventKey: query.eventKey ?? MASTERCLASS.key,
+      event:
+        !query.eventKey || query.eventKey === MASTERCLASS.key
+          ? MASTERCLASS
+          : null,
     };
   }
 

@@ -1,9 +1,10 @@
 "use client";
-import { CreditCard, FileText, Mail, MessageSquare, Palette, Settings2 } from "lucide-react";
+import { CreditCard, FileText, KeyRound, Mail, MessageSquare, Palette, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./configuration-layout.module.css";
 const sections = [
+  { href: "/admin/configuracion/api", label: "API y agentes", description: "Claves y acceso MCP", icon: KeyRound },
   {
     href: "/admin/configuracion/inicial",
     label: "General",

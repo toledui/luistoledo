@@ -19,6 +19,9 @@ export class CouponCodeDto {
   @IsArray() @IsString({ each: true }) courseIds!: string[];
 }
 export class CheckoutDto {
+  @IsOptional() @IsIn(['asistente-ia']) program?: 'asistente-ia';
+  @IsOptional() @IsIn(['FULL', 'INSTALLMENTS']) paymentOption?:
+    'FULL' | 'INSTALLMENTS';
   @IsOptional() @IsString() couponCode?: string;
   @IsIn(['STRIPE', 'BANK_TRANSFER']) paymentMethod!: 'STRIPE' | 'BANK_TRANSFER';
 }

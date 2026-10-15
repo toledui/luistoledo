@@ -20,8 +20,25 @@ describe('Immediate queued email delivery', () => {
       update: jest.fn(),
     },
     emailLog: { create: jest.fn() },
+    coursePaymentPlan: { findFirst: jest.fn() },
   };
   let service: EmailService;
+  it('cancels an old payment reminder after the plan is paid or reminders are paused', async () => {
+    prisma.emailQueue.findUniqueOrThrow.mockResolvedValue({
+      id: 'queue-1',
+      event: 'PAID_COURSE_PAYMENT_REMINDER',
+      userId: 'student',
+      courseId: 'course',
+      createdAt: new Date(),
+    });
+    prisma.coursePaymentPlan.findFirst.mockResolvedValue(null);
+    await service.processItem('queue-1');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(prisma.emailQueue.update).toHaveBeenCalledWith({
+      where: { id: 'queue-1' },
+      data: { status: EmailQueueStatus.CANCELLED },
+    });
+  });
   beforeEach(() => {
     jest.resetAllMocks();
     jest

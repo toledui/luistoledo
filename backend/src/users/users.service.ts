@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -7,10 +8,46 @@ import {
 import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListUsersDto } from './dto/list-users.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { hash } from 'argon2';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+  async create(dto: CreateUserDto, actorId: string) {
+    const passwordHash = await hash(dto.password, { type: 2 });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: dto.email.trim().toLowerCase(),
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            passwordHash,
+            status: UserStatus.ACTIVE,
+            roles: { create: { role: { connect: { name: 'STUDENT' } } } },
+          },
+          select: this.select(),
+        });
+        await tx.settingAudit.create({
+          data: {
+            section: 'users',
+            action: 'USER_CREATED',
+            actorId,
+            changes: { userId: user.id },
+          },
+        });
+        return { ...user, roles: user.roles.map(({ role }) => role.name) };
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      )
+        throw new ConflictException('Ya existe un usuario con este correo');
+      throw error;
+    }
+  }
   private select() {
     return {
       id: true,

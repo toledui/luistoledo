@@ -117,6 +117,7 @@ export class CoursesService {
     return this.prisma.course.findMany({
       where: {
         status: CourseStatus.PUBLISHED,
+        isListed: true,
         ...(filters.search
           ? {
               OR: [
@@ -177,7 +178,7 @@ export class CoursesService {
   }
   async publicBySlug(slug: string) {
     const course = await this.prisma.course.findFirst({
-      where: { slug, status: CourseStatus.PUBLISHED },
+      where: { slug, status: CourseStatus.PUBLISHED, isListed: true },
       include: detailInclude,
     });
     if (!course) throw new NotFoundException('Curso no encontrado');

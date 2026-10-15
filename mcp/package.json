@@ -1,0 +1,9 @@
+{
+  "name": "luistoledo-academy-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.mjs", "test": "node --test" },
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.28.0" },
+  "engines": { "node": ">=20" }
+}

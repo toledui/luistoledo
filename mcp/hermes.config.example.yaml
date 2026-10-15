@@ -1,0 +1,11 @@
+# Añadir a ~/.hermes/config.yaml, ajustando la ruta al equipo donde corre Hermes.
+mcp_servers:
+  academy:
+    command: "node"
+    args: ["C:/Development/luistoledo/mcp/server.mjs"]
+    env:
+      ACADEMY_API_URL: "https://TU-BACKEND/api/v1"
+      ACADEMY_API_KEY: "${ACADEMY_API_KEY}"
+      ACADEMY_READ_ONLY: "false"
+    timeout: 60
+    supports_parallel_tool_calls: false

@@ -33,12 +33,28 @@ async function bootstrap() {
     .setDescription('API REST para la plataforma educativa Luis Toledo Academy')
     .setVersion('1.0')
     .addCookieAuth('lt_access')
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      description: 'API key creada en Configuración → API y agentes',
+    })
     .build();
-  SwaggerModule.setup(
-    'api/docs',
-    app,
-    SwaggerModule.createDocument(app, swaggerConfig),
-  );
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  for (const [path, item] of Object.entries(document.paths)) {
+    if (!path.startsWith(`/${prefix.replace(/^\/+|\/+$/g, '')}/admin/`))
+      continue;
+    const sessionOnly =
+      path.includes('/admin/settings/api-keys') ||
+      /\/users\/[^/]+\/(roles|sessions)(\/|$)/.test(path);
+    for (const method of ['get', 'post', 'patch', 'put', 'delete'] as const) {
+      const operation = item?.[method];
+      if (operation)
+        operation.security = sessionOnly
+          ? [{ cookie: [] }]
+          : [{ bearer: [] }, { cookie: [] }];
+    }
+  }
+  SwaggerModule.setup('api/docs', app, document);
   await app.listen(port);
 }
 void bootstrap();

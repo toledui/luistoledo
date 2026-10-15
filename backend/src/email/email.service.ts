@@ -294,6 +294,33 @@ export class EmailService {
       where: { id },
     });
     try {
+      if (item.event === 'PAID_COURSE_PAYMENT_REMINDER') {
+        const plan = await this.prisma.coursePaymentPlan.findFirst({
+          where: {
+            userId: item.userId ?? '',
+            courseId: item.courseId ?? '',
+            activatedAt: { not: null },
+            completedAt: null,
+            remindersEnabled: true,
+            orders: {
+              some: {
+                status: { in: ['PENDING', 'AWAITING_PAYMENT', 'FAILED'] },
+              },
+            },
+          },
+        });
+        // Do not deliver a queued reminder after payment or after the student pauses it.
+        if (
+          !plan ||
+          (plan.lastReminderAt && plan.lastReminderAt > item.createdAt)
+        ) {
+          await this.prisma.emailQueue.update({
+            where: { id },
+            data: { status: EmailQueueStatus.CANCELLED },
+          });
+          return;
+        }
+      }
       const settings = await this.settings();
       const transport = await this.transporter();
       const result = transport

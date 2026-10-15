@@ -19,7 +19,7 @@ import { extname, join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequest } from '../auth/authenticated-request';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -76,6 +76,14 @@ export class AdminSettingsController {
   }
 
   @Post('branding/upload/:field')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
   @ApiOperation({ summary: 'Subir y asignar un recurso de marca' })
   @UseInterceptors(
     FileInterceptor('file', {
