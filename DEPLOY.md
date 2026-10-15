@@ -1,6 +1,6 @@
 # Manual de despliegue — sin Docker
 
-Este procedimiento despliega Luis Toledo Academy directamente desde la terminal en un servidor Linux. Se recomienda Ubuntu LTS, Node.js 24 LTS, MySQL 8/MariaDB compatible, Nginx y un administrador de procesos como systemd o PM2. También se admite Node 22 desde 22.13.0. Node 20 no cumple los requisitos de todas las dependencias bloqueadas. La versión recomendada está en `.nvmrc`; ese archivo solo selecciona una versión cuando se usa nvm, no actualiza Node ni PM2 automáticamente.
+Este procedimiento despliega Luis Toledo Academy directamente desde la terminal en un servidor Linux. Para este servidor se conserva Node.js 20.20.0, con Ubuntu LTS, MySQL 8/MariaDB compatible, Nginx y PM2. No actualices el Node del sistema: el servidor comparte el runtime con otras webs. `.nvmrc` indica 20.20.0 para reproducir el entorno; no cambia Node ni PM2 automáticamente. Algunas dependencias declaran un mínimo superior y pueden emitir advertencias de engine; se deben distinguir de errores de instalación y validar compilación y pruebas con el runtime conservado.
 
 ## Actualización de masterclass en producción existente — PM2
 
@@ -24,7 +24,7 @@ Estos pasos asumen `/var/www/luistoledo`, MySQL local y dos procesos PM2. Sustit
    git rev-parse HEAD
    ```
 
-   Si Node es 20, actualízalo primero. Revisa `command -v node`, `command -v pm2`, `command -v nvm` y `/etc/os-release` para usar el mismo método con el que administras el runtime del servidor. Cambiar el Node de una terminal no garantiza que los procesos ni el arranque automático de PM2 usen esa versión. No ejecutes `npm install -g npm@latest` como solución: actualizar npm por sí solo no actualiza Node.
+   Mantén Node 20.20.0 y npm 10.8.2, las versiones confirmadas en producción. No ejecutes instaladores de NodeSource, no reemplaces `/usr/bin/node`, no actualices npm globalmente ni reinicies todo PM2 para esta entrega. Primero corrige los lockfiles y valida la instalación con las versiones existentes.
 
    El directorio de trabajo del backend debe ser `/var/www/luistoledo/backend`: el servicio resuelve `.env` y `uploads/` desde ese directorio. El build actual genera `backend/dist/src/main.js`. Si el proceso apunta a `dist/main.js`, corrige su configuración PM2 antes de reiniciarlo. No uses `git reset --hard` para resolver cambios propios del servidor.
 3. Haz respaldo fuera del directorio público. En una ventana breve de mantenimiento, detén solamente estos dos procesos para no recibir nuevas inscripciones, pedidos o archivos durante el respaldo y la actualización:
@@ -95,26 +95,16 @@ Si necesitas corregir una ruta PM2, hazlo en el ecosystem que ya uses. Para una 
 
 ### Diagnóstico de los errores reportados
 
-#### Continuar en el servidor confirmado: Ubuntu 24.04, Node y PM2 en `/usr/bin`
+#### Continuar conservando Node 20.20.0 y el PM2 existente
 
-El servidor reportó Ubuntu 24.04.3 LTS x86_64, sin nvm, con `/usr/bin/node` y `/usr/bin/pm2`. En ese caso puedes actualizar el Node del sistema con NodeSource, conservando las rutas existentes. Hazlo en mantenimiento, después del respaldo y de detener los procesos de esta web. Si el servidor tiene otras aplicaciones Node, la actualización también cambia el binario que usarán al reiniciarse.
+El servidor tiene Ubuntu 24.04.3 LTS x86_64, Node 20.20.0, npm 10.8.2 y varios sitios en PM2. Esta entrega mantiene esas versiones. El error que detuvo la instalación fue `EUSAGE` por entradas faltantes en los lockfiles; `EBADENGINE` es una advertencia separada con la configuración habitual de npm.
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/luistoledo-nodesource-24.sh
-bash /tmp/luistoledo-nodesource-24.sh
-apt-get install -y nodejs
-hash -r
-node --version
-npm --version
-command -v pm2
-```
-
-Node debe mostrar `v24.x`. Ejecuta cada comando solo si el anterior terminó correctamente. No necesitas actualizar npm por separado. No desinstales PM2 ni borres su directorio de configuración. Si `pm2` deja de encontrarse, revisa la instalación antes de continuar; no crees procesos duplicados.
-
-Sube primero los lockfiles corregidos de esta entrega al repositorio y luego, en el servidor:
+Sube las correcciones de los lockfiles y manifiestos al repositorio. En el servidor, sin cambiar Node:
 
 ```bash
 cd /var/www/luistoledo
+node --version
+npm --version
 git pull --ff-only origin main
 npm ci
 npm ci --include=dev --prefix backend
@@ -123,14 +113,16 @@ npm run db:generate
 npm run db:status
 ```
 
-Solo si las instalaciones pasan, continúa con los pasos de compilación, revisión/aplicación de la migración y reinicio descritos arriba. Revisa con `pm2 describe` que los intérpretes o los scripts npm no estén fijados a otra instalación Node antigua. Si configuras arranque automático de PM2, comprueba también la versión/ruta que usa el servicio al reiniciar el servidor.
+Si aparece un error real, detente en ese paso. No uses `--force` ni ignores un fallo de engine con `engine-strict=true`: conserva el mensaje para revisar la dependencia. No se baja la versión de `sanitize-html` para ocultar advertencias. Esa dependencia declara Node >=22.12.0 y Prisma tiene un paquete de desarrollo opcional que declara Node >=22; que el proyecto compile y sus pruebas pasen con Node 20 no cambia el soporte declarado por sus proveedores.
+
+Después del respaldo y de revisar que la única migración pendiente sea la de masterclass, continúa con compilación y migración según los pasos anteriores. Detén o reinicia solamente los procesos de Luis Toledo: los IDs confirmados fueron 5 (backend) y 6 (frontend). No uses `pm2 restart all`, `pm2 update` ni borres los procesos de las otras webs. Verifica de nuevo los IDs antes de actuar si la lista cambió. Usa `pm2 save` después de comprobar la web.
 
 La reparación de lockfiles no añade ni ejecuta migraciones, no ejecuta el seed y no actualiza las dependencias directas. Se agregan los registros transitivos omitidos, con `@emnapi/wasi-threads` del backend ajustado de 1.2.2 a 1.2.3. Los avisos de `npm audit` son un informe separado: no ejecutes `npm audit fix --force` durante esta reparación.
 
 #### Referencias de errores
 
 - **`npm ci` → `EUSAGE` y paquetes `@emnapi` faltantes:** los lockfiles anteriores omitían dependencias opcionales/peer necesarias para validar la instalación con npm 10. Esta corrección agrega los registros faltantes de `@emnapi/core` y `@emnapi/runtime`, y las entradas de `wasi-threads` requeridas. La consistencia se comprobó con `npm ci --dry-run --ignore-scripts` usando npm 10.8.2 en directorios vacíos separados. Sube y descarga los lockfiles corregidos del backend y frontend; no borres los lockfiles ni uses `--force`, `--legacy-peer-deps` o `npm audit fix` para saltar este error. La comprobación de lockfile no ejecuta seeds, migraciones ni scripts de instalación y no sustituye la compilación real en Linux.
-- **`npm WARN EBADENGINE`:** el servidor reportó Node 20.20.0, pero `sanitize-html` exige al menos 22.12.0 y las pruebas del frontend con `jsdom` requieren 22.13.0 o una rama posterior compatible. Usa Node 24 LTS o Node 22.13.0+ de la rama 22. Los manifiestos raíz, backend y frontend declaran ahora `^22.13.0 || >=24.0.0`.
+- **`npm WARN EBADENGINE`:** el servidor reportó Node 20.20.0, pero `sanitize-html` declara Node >=22.12.0 y `@prisma/streams-local` declara Node >=22.0.0. Se conserva Node 20.20.0 por decisión del despliegue compartido. Los manifiestos declaran `^20.20.0 || ^22.13.0 || >=24.0.0`. `jsdom` también admite Node 20.19.0+, por lo que no exige cambiar la rama 20. Los avisos restantes de proveedores no se corrigen modificando su metadata.
 
 - **`/admin/email/test` → 503:** el backend no pudo completar la prueba. Abre DevTools → Network → la solicitud → Response y consulta `message`, o revisa Configuración → Correo junto al botón de prueba. La versión actual muestra el error ahí, actualiza el estado después de fallar y registra el código SMTP en los logs de PM2. Guarda los cambios antes de probar: la prueba usa la configuración persistida, no los campos sin guardar.
 - **Credenciales cifradas:** conserva exactamente `APP_ENCRYPTION_KEY`. Cambiarla o arrancar PM2 desde otra carpeta puede impedir descifrar SMTP. Recupera la clave original antes de volver a guardar secretos; otros secretos también dependen de ella. El código ahora devuelve un mensaje específico cuando falla el descifrado.
