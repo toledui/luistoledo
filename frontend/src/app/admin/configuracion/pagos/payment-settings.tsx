@@ -36,10 +36,14 @@ export function PaymentSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   useEffect(() => {
     void apiFetch<Settings>("/admin/settings/payments")
-      .then(setForm)
+      .then((settings) => {
+        setForm(settings);
+        setWebhookUrl(new URL("/api/v1/payments/webhooks/stripe", window.location.origin).href);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -97,7 +101,7 @@ export function PaymentSettings() {
           <label>Secret key<input type="password" value={stripeSecretKey} onChange={(e) => setStripeSecretKey(e.target.value)} placeholder={form.stripeSecretConfigured ? "Configurada · escribe para sustituir" : "sk_test_…"} /></label>
           <label>Webhook secret<input type="password" value={stripeWebhookSecret} onChange={(e) => setStripeWebhookSecret(e.target.value)} placeholder={form.stripeWebhookConfigured ? "Configurado · escribe para sustituir" : "whsec_…"} /></label>
         </div>
-        <div className={styles.webhook}><strong>Endpoint del webhook</strong><code>http://localhost:4000/api/v1/payments/webhooks/stripe</code><span>Eventos: checkout.session.completed</span></div>
+        <div className={styles.webhook}><strong>Endpoint del webhook</strong><code>{webhookUrl}</code><span>Eventos: checkout.session.completed</span></div>
       </section>
       <section>
         <div className={styles.sectionTitle}><Landmark /><div><h2>Transferencia bancaria</h2><p>El pedido queda pendiente hasta que un administrador confirme el depósito.</p></div><label><input type="checkbox" checked={form.bankTransferEnabled} onChange={(e) => field("bankTransferEnabled", e.target.checked)} /> Activar</label></div>
