@@ -26,6 +26,23 @@ npm run start:dev --prefix backend
 
 ## Formato y autenticación
 
+### Registro de masterclass
+
+La landing pública está en `/masterclass` y la bandeja administrativa en `/admin/masterclass`.
+
+- `GET /api/v1/masterclass`: fecha, disponibilidad del registro y configuración pública de Turnstile.
+- `POST /api/v1/masterclass/registrations`: recibe `name`, `email`, `whatsapp` (con `+` y lada internacional), `consent: true` y `turnstileToken` si está activado. No requiere cuenta. Devuelve `success` y `whatsappGroupUrl` después de persistir. El registro cierra al inicio del evento.
+- `GET /api/v1/admin/masterclass/registrations?page=1&limit=25&search=texto`: lista paginada, conteo y estado del aviso de cada inscripción. Requiere sesión y `settings.manage`.
+- `POST /api/v1/admin/masterclass/registrations/:id/notify`: intenta el aviso pendiente o fallido usando el destinatario configurado actualmente. Requiere sesión y `settings.manage`.
+
+Un correo solo puede registrarse una vez por evento. Reenviar el formulario confirma el registro sin modificar los datos originales ni duplicar avisos. El registro y su aviso se guardan en una transacción; se intenta enviar de inmediato y la cola reintenta fallos SMTP. El destinatario es el de Configuración → Contacto, con el correo general/soporte como respaldo. En modo LOG no se envían correos reales. Si no hay destinatario, la inscripción se conserva y el admin permite enviar el aviso después de configurar el correo.
+
+El evento actual está definido en `backend/src/masterclass/masterclass.constants.ts` y su presentación en `frontend/src/lib/masterclass.ts`: 29 de octubre de 2026, 20:00, `America/Mexico_City` (UTC−6). Al cambiar de edición, actualiza ambos archivos y utiliza una nueva clave de evento para conservar el historial.
+
+Cada nueva inscripción también guarda un correo `MASTERCLASS_CONFIRMATION` dirigido al participante, con fecha, hora y enlace al grupo de WhatsApp. Se crea en la misma transacción del registro y se intenta enviar inmediatamente, independientemente de que exista un destinatario administrativo. Usa el proveedor configurado y los reintentos de la cola de correo. Los envíos se consultan en los registros de correo; reenviar el formulario no duplica la confirmación.
+
+### Sesión y permisos
+
 - Las solicitudes y respuestas utilizan JSON, excepto cargas `multipart/form-data` y descargas.
 - La autenticación se basa en cookies HTTP-only (`lt_access` y `lt_refresh` por defecto).
 - Desde navegador o `fetch`, utiliza `credentials: "include"`.

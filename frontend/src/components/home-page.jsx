@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import Image from "next/image";
+import Link from "next/link";
+import styles from "./home-page.module.css";
 
 const processSteps = [
   {
@@ -261,6 +263,23 @@ function App() {
               <strong>SEO</strong>
               <strong>AUTOMATIZACIÓN</strong>
               <strong>VENTAS B2B</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.masterclass} id="masterclass" aria-labelledby="masterclass-heading">
+          <div className={`container ${styles.inner}`}>
+            <div>
+              <span className={styles.kicker}>MASTERCLASS GRATUITA · EN VIVO</span>
+              <h2 id="masterclass-heading">Inteligencia Artificial para Dueños de Negocios</h2>
+              <p>Aprende a usar la IA para crear contenido que te ayude a vender, dar seguimiento a tus clientes y ahorrar tiempo en las tareas de tu negocio. Sin experiencia previa.</p>
+              <ul><li>Mejora tus mensajes de venta</li><li>Organiza tu trabajo diario</li><li>Dedica más tiempo a tus clientes</li></ul>
+            </div>
+            <div className={styles.registration}>
+              <span>29 de octubre de 2026</span>
+              <strong>8:00 p. m.</strong>
+              <p>Hora de Ciudad de México<br />90 minutos · En línea · Gratis</p>
+              <Link href="/masterclass" className="btn btn-primary btn-large">Reservar mi lugar gratis <ArrowRight size={18} /></Link>
             </div>
           </div>
         </section>

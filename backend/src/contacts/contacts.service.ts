@@ -68,7 +68,7 @@ export class ContactsService {
       .then(() => this.adminSettings());
   }
 
-  private async verifyTurnstile(token: string | undefined, ipAddress?: string) {
+  async verifyTurnstile(token: string | undefined, ipAddress?: string) {
     const settings = await this.settings();
     if (!settings.turnstileEnabled) return;
     if (!settings.turnstileSiteKey || !settings.turnstileSecretEncrypted)

@@ -1,4 +1,8 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { EmailProvider, EmailQueueStatus } from '@prisma/client';
 import nodemailer from 'nodemailer';
@@ -8,6 +12,7 @@ import { UpdateEmailSettingsDto } from './dto/update-email-settings.dto';
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private processing = false;
   constructor(
     private readonly prisma: PrismaService,
@@ -80,12 +85,20 @@ export class EmailService {
     if (settings.provider === EmailProvider.LOG) return null;
     if (!settings.host)
       throw new ServiceUnavailableException('El host SMTP no está configurado');
-    const user = settings.usernameEncrypted
-      ? this.encryption.decrypt(settings.usernameEncrypted)
-      : undefined;
-    const pass = settings.passwordEncrypted
-      ? this.encryption.decrypt(settings.passwordEncrypted)
-      : undefined;
+    let user: string | undefined;
+    let pass: string | undefined;
+    try {
+      user = settings.usernameEncrypted
+        ? this.encryption.decrypt(settings.usernameEncrypted)
+        : undefined;
+      pass = settings.passwordEncrypted
+        ? this.encryption.decrypt(settings.passwordEncrypted)
+        : undefined;
+    } catch {
+      throw new ServiceUnavailableException(
+        'No se pudieron descifrar las credenciales SMTP. Verifica que APP_ENCRYPTION_KEY sea la misma con la que se guardaron; no la regeneres. Si la clave original no se puede recuperar, vuelve a guardar el usuario y la contraseña SMTP con la clave vigente.',
+      );
+    }
     return nodemailer.createTransport({
       host: settings.host,
       port: settings.port,
@@ -142,11 +155,21 @@ export class EmailService {
             ? 'Correo registrado en modo log.'
             : 'Correo enviado correctamente.',
       };
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message.slice(0, 500)
-          : 'Error desconocido';
+    } catch (error: unknown) {
+      const code =
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        typeof error.code === 'string' &&
+        /^[A-Z0-9_]+$/.test(error.code)
+          ? error.code
+          : undefined;
+      const detail =
+        error instanceof Error ? error.message : 'Error desconocido';
+      const message = `${code ? `[${code}] ` : ''}${detail}`.slice(0, 500);
+      this.logger.error(
+        `Falló la prueba de correo (${code || 'sin código SMTP'}). Consulta lastErrorMessage en Configuración > Correo.`,
+      );
       await this.prisma.emailProviderSetting.update({
         where: { id: 1 },
         data: {
@@ -256,10 +279,19 @@ export class EmailService {
     }
   }
 
-  private async processItem(id: string) {
-    const item = await this.prisma.emailQueue.update({
-      where: { id },
+  async processItem(id: string) {
+    // Atomically claim the item so the immediate attempt and cron cannot both send it.
+    const claimed = await this.prisma.emailQueue.updateMany({
+      where: {
+        id,
+        status: EmailQueueStatus.PENDING,
+        nextAttemptAt: { lte: new Date() },
+      },
       data: { status: EmailQueueStatus.PROCESSING, attempts: { increment: 1 } },
+    });
+    if (!claimed.count) return;
+    const item = await this.prisma.emailQueue.findUniqueOrThrow({
+      where: { id },
     });
     try {
       const settings = await this.settings();

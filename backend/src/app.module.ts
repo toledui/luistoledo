@@ -20,6 +20,7 @@ import { QuizzesModule } from './quizzes/quizzes.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { SalesModule } from './sales/sales.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { MasterclassModule } from './masterclass/masterclass.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ContactsModule } from './contacts/contacts.module';
     CertificatesModule,
     SalesModule,
     ContactsModule,
+    MasterclassModule,
   ],
   controllers: [AppController],
   providers: [AppService],

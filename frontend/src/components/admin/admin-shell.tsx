@@ -40,6 +40,7 @@ const navigation = [
   { href: "/admin/cupones", label: "Cupones", icon: TicketPercent },
   { href: "/admin/medios", label: "Medios", icon: Images },
   { href: "/admin/contacto", label: "Contacto", icon: MessageSquare },
+  { href: "/admin/masterclass", label: "Masterclass", icon: Users },
   {
     href: "/admin/configuracion",
     label: "Configuración",

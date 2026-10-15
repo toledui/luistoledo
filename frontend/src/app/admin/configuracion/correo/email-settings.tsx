@@ -51,6 +51,10 @@ export function EmailSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [testResult, setTestResult] = useState<{
+    message: string;
+    success: boolean;
+  } | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [testRecipient, setTestRecipient] = useState(
     "contacto@luistoledo.com.mx",
@@ -120,16 +124,24 @@ export function EmailSettings() {
   async function test() {
     setSaving(true);
     setMessage("");
+    setTestResult(null);
     try {
       const result = await apiFetch<{ message: string }>("/admin/email/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recipient: testRecipient }),
       });
-      setMessage(result.message);
+      setTestResult({ message: result.message, success: true });
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Falló la prueba.");
+      setTestResult({
+        message: error instanceof Error ? error.message : "Falló la prueba.",
+        success: false,
+      });
+      const current = await apiFetch<Status>("/admin/email/status").catch(
+        () => null,
+      );
+      if (current) setStatus(current);
     } finally {
       setSaving(false);
     }
@@ -348,7 +360,10 @@ export function EmailSettings() {
             <Send />
             <div>
               <h2>Correo de prueba</h2>
-              <p>Valida la configuración actual.</p>
+              <p>
+                Valida la configuración guardada. Si hiciste cambios, pulsa
+                Guardar antes de enviar la prueba.
+              </p>
             </div>
           </div>
           <label>
@@ -363,6 +378,14 @@ export function EmailSettings() {
             <Send size={16} />
             Enviar prueba
           </button>
+          {testResult && (
+            <div
+              role={testResult.success ? "status" : "alert"}
+              className={testResult.success ? styles.message : styles.error}
+            >
+              {testResult.message}
+            </div>
+          )}
           {status?.lastSuccessAt && (
             <small>
               Último éxito:{" "}
