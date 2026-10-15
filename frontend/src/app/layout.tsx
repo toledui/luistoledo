@@ -5,6 +5,7 @@ import { PublicBranding } from "@/components/public-branding";
 import { CartProvider } from "@/components/cart/cart-context";
 import { PublicShell } from "@/components/public-shell/public-shell";
 import { ScrollToTop } from "@/components/scroll-to-top/scroll-to-top";
+import { getSiteMetadata } from "@/lib/site-metadata";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,18 +19,11 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  ),
-  title: {
-    default: "Luis Toledo Academy",
-    template: "%s | Luis Toledo Academy",
-  },
-  description:
-    "Cursos prácticos de desarrollo web, marketing digital y ventas B2B.",
-  openGraph: { title: "Luis Toledo Academy", locale: "es_MX", type: "website" },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getSiteMetadata({ path: "/" });
+}
 
 export default function RootLayout({
   children,

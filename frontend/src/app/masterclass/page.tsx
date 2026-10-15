@@ -12,18 +12,17 @@ import {
 } from "lucide-react";
 import { masterclass } from "@/lib/masterclass";
 import { MasterclassForm } from "./registration-form";
+import { getSiteMetadata } from "@/lib/site-metadata";
 import styles from "./masterclass.module.css";
 
-export const metadata: Metadata = {
-  title: "IA para dueños de negocios · Masterclass gratuita · 29 de octubre",
-  description:
-    "Aprende a usar la inteligencia artificial para crear contenido que venda, atender mejor a tus clientes y ahorrar tiempo. Gratis y en vivo con Luis Toledo. 29 de octubre, 8:00 p. m., hora de Ciudad de México.",
-  openGraph: {
-    title: "Aprende a usar la IA para ahorrar tiempo y vender mejor",
+export async function generateMetadata(): Promise<Metadata> {
+  return getSiteMetadata({
+    path: "/masterclass",
+    title: "IA para dueños de negocios · Masterclass gratuita · 29 de octubre",
     description:
-      "Masterclass gratuita para dueños de negocios con Luis Toledo · 29 de octubre · 8:00 p. m., Ciudad de México.",
-  },
-};
+      "Aprende a usar la inteligencia artificial para crear contenido que venda, atender mejor a tus clientes y ahorrar tiempo. Gratis y en vivo con Luis Toledo. 29 de octubre, 8:00 p. m., hora de Ciudad de México.",
+  });
+}
 
 const lessons = [
   {

@@ -76,7 +76,6 @@ export function PublicBranding() {
       .then(({ general, branding }) => {
         document.documentElement.lang = general.defaultLocale;
         applyBranding(branding);
-        document.title = general.academyName;
       })
       .catch(() => undefined);
   }, []);
