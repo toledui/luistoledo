@@ -27,13 +27,16 @@ export class RegisterMasterclassDto {
   @IsEmail()
   @MaxLength(191)
   email!: string;
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.replace(/[\s()-]/g, '') : value,
-  )
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') return value;
+    const number = value.replace(/[\s().-]/g, '');
+    if (/^\d{10}$/.test(number)) return `+52${number}`;
+    return /^\d{11,15}$/.test(number) ? `+${number}` : number;
+  })
   @IsString()
-  @Matches(/^\+[1-9]\d{7,14}$/, {
+  @Matches(/^\+\d{10,15}$/, {
     message:
-      'Escribe tu WhatsApp con lada internacional, por ejemplo +525512345678.',
+      'Escribe tu WhatsApp con 10 dígitos o con la clave de tu país, con o sin +.',
   })
   whatsapp!: string;
   @Equals(true, {

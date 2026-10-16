@@ -14,7 +14,7 @@ const fetchMock = vi.mocked(apiFetch);
 const group = "https://chat.whatsapp.com/Lom8zLWDGKe9RbqjMhjbN4";
 const settings = { turnstileEnabled: false, registrationOpen: true };
 
-function fill() {
+function fill(whatsapp = "+52 55 1234 5678") {
   fireEvent.change(screen.getByLabelText("Nombre completo"), {
     target: { value: "Ana Prueba" },
   });
@@ -22,7 +22,7 @@ function fill() {
     target: { value: "ana@example.com" },
   });
   fireEvent.change(screen.getByLabelText("Número de WhatsApp"), {
-    target: { value: "+52 55 1234 5678" },
+    target: { value: whatsapp },
   });
   fireEvent.click(screen.getByRole("checkbox"));
 }
@@ -82,6 +82,20 @@ describe("MasterclassForm", () => {
       screen.queryByRole("link", { name: /unirme al grupo/i }),
     ).not.toBeInTheDocument();
   });
+  it.each(["5512345678", "525512345678", "+52 (55) 1234-5678"])(
+    "permite registrar el WhatsApp %s sin exigir el prefijo +",
+    async (whatsapp) => {
+      fetchMock.mockResolvedValueOnce({ success: true, whatsappGroupUrl: group });
+      render(<MasterclassForm />);
+      const button = screen.getByRole("button", { name: /reservar mi lugar gratis/i });
+      await waitFor(() => expect(button).toBeEnabled());
+      fill(whatsapp);
+      expect((screen.getByLabelText("Número de WhatsApp") as HTMLInputElement).checkValidity()).toBe(true);
+      fireEvent.click(button);
+      expect(await screen.findByRole("heading", { name: /tu lugar está registrado/i })).toBeVisible();
+      expect(JSON.parse(fetchMock.mock.calls[1][1]!.body as string).whatsapp).toBe(whatsapp);
+    },
+  );
   it("impide el envío cuando el servidor cierra el registro", async () => {
     fetchMock.mockReset();
     fetchMock.mockResolvedValueOnce({ ...settings, registrationOpen: false });

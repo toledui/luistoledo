@@ -165,7 +165,7 @@ describe('Masterclass registrations', () => {
     );
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
-  it('normalizes email and WhatsApp, requires international format and consent', async () => {
+  it('normalizes email and WhatsApp and requires consent', async () => {
     const valid = plainToInstance(RegisterMasterclassDto, {
       ...dto,
       email: ' ANA@example.com ',
@@ -182,6 +182,38 @@ describe('Masterclass registrations', () => {
           consent: false,
         }),
       ),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+  });
+  it.each([
+    ['5512345678', '+525512345678'],
+    ['55 1234 5678', '+525512345678'],
+    ['(55) 1234-5678', '+525512345678'],
+    ['525512345678', '+525512345678'],
+    ['+52 (55) 1234-5678', '+525512345678'],
+    ['1 (415) 555-2671', '+14155552671'],
+    ['+34 612.345.678', '+34612345678'],
+  ])('accepts WhatsApp %s and stores %s', async (whatsapp, expected) => {
+    const valid = plainToInstance(RegisterMasterclassDto, { ...dto, whatsapp });
+    expect(await validate(valid)).toHaveLength(0);
+    expect(valid.whatsapp).toBe(expected);
+    await service.register(valid);
+    const calls = prisma.masterclassRegistration.create.mock
+      .calls as unknown as [{ data: { whatsapp: string } }][];
+    expect(calls[0][0].data.whatsapp).toBe(expected);
+  });
+  it.each([
+    '',
+    '551234567',
+    '+5255123456789012',
+    '551234abcd',
+    '++525512345678',
+  ])('rejects incomplete or invalid WhatsApp %s', async (whatsapp) => {
+    const invalid = plainToInstance(RegisterMasterclassDto, {
+      ...dto,
+      whatsapp,
+    });
+    expect((await validate(invalid)).map((error) => error.property)).toContain(
+      'whatsapp',
+    );
   });
 });

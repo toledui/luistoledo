@@ -247,15 +247,14 @@ export function MasterclassForm() {
               type="tel"
               autoComplete="tel"
               inputMode="tel"
-              placeholder="+52 55 1234 5678"
+              placeholder="55 1234 5678 o +52 55 1234 5678"
               required
               maxLength={30}
-              pattern="\+[1-9][0-9 \(\)\-]{7,28}"
               aria-describedby="whatsapp-help"
             />
             <small id="whatsapp-help">
-              Incluye + y la lada de tu país. México: +52 y tu número de 10
-              dígitos.
+              Puedes escribir tus 10 dígitos o incluir la clave de tu país, con
+              o sin +.
             </small>
           </label>
           <label className={styles.consent}>

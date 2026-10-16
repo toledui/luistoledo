@@ -95,6 +95,14 @@ Si necesitas corregir una ruta PM2, hazlo en el ecosystem que ya uses. Para una 
 
 ### Diagnóstico de los errores reportados
 
+#### Registro de masterclass: `Unsupported state or unable to authenticate data`
+
+Si el stack del backend incluye `EncryptionService.decrypt`, `ContactsService.verifyTurnstile` y `MasterclassService.register`, la clave secreta guardada de Turnstile no se puede descifrar con la `APP_ENCRYPTION_KEY` del proceso actual. El registro se interrumpe antes de guardarse. No es un error del teléfono ni del envío SMTP.
+
+Conserva la clave de cifrado original si está disponible. Si la clave vigente es la que se mantendrá, entra al admin en **Configuración → Contacto**, copia desde Cloudflare la **Secret key** del mismo widget que corresponde a la **Site key**, pégala en el campo Secret key y pulsa **Guardar**. Guardar con el campo vacío conserva el valor anterior y no lo repara. Este paso vuelve a cifrar solamente el secreto de Turnstile con la clave vigente; no requiere migraciones, seed ni reinicio. Reintenta el registro con una verificación nueva.
+
+El backend devuelve un 503 con un mensaje de verificación temporalmente no disponible cuando no puede descifrar el secreto, y deja las instrucciones de recuperación en el log. Mantiene la verificación habilitada y no confirma una inscripción que no se haya guardado. Las credenciales SMTP o Stripe cifradas con otra clave requieren su propia recuperación; volver a guardar Turnstile no las repara.
+
 #### Continuar conservando Node 20.20.0 y el PM2 existente
 
 El servidor tiene Ubuntu 24.04.3 LTS x86_64, Node 20.20.0, npm 10.8.2 y varios sitios en PM2. Esta entrega mantiene esas versiones. El error que detuvo la instalación fue `EUSAGE` por entradas faltantes en los lockfiles; `EBADENGINE` es una advertencia separada con la configuración habitual de npm.

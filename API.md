@@ -58,7 +58,7 @@ El servidor MCP y las instrucciones verificadas para Hermes están en [mcp/READM
 La landing pública está en `/masterclass` y la bandeja administrativa en `/admin/masterclass`.
 
 - `GET /api/v1/masterclass`: fecha, disponibilidad del registro y configuración pública de Turnstile.
-- `POST /api/v1/masterclass/registrations`: recibe `name`, `email`, `whatsapp` (con `+` y lada internacional), `consent: true` y `turnstileToken` si está activado. No requiere cuenta. Devuelve `success` y `whatsappGroupUrl` después de persistir. El registro cierra al inicio del evento.
+- `POST /api/v1/masterclass/registrations`: recibe `name`, `email`, `whatsapp` (10 dígitos de México o número con clave de país, con o sin `+`; acepta espacios, paréntesis, puntos y guiones), `consent: true` y `turnstileToken` si está activado. Normaliza los números locales de 10 dígitos agregando `+52` y conserva la clave de país cuando se incluye (hasta 15 dígitos). No requiere cuenta. Devuelve `success` y `whatsappGroupUrl` después de persistir. El registro cierra al inicio del evento.
 - `GET /api/v1/admin/masterclass/registrations?page=1&limit=25&search=texto`: lista paginada, conteo y estado del aviso de cada inscripción. Requiere sesión y `settings.manage`.
 - `POST /api/v1/admin/masterclass/registrations/:id/notify`: intenta el aviso pendiente o fallido usando el destinatario configurado actualmente. Requiere sesión y `settings.manage`.
 

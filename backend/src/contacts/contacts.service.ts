@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../crypto/encryption.service';
@@ -11,6 +13,7 @@ import { UpdateContactSettingsDto } from './dto/update-contact-settings.dto';
 
 @Injectable()
 export class ContactsService {
+  private readonly logger = new Logger(ContactsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
@@ -77,7 +80,17 @@ export class ContactsService {
       );
     if (!token)
       throw new BadRequestException('Completa la verificación de seguridad');
-    const secret = this.encryption.decrypt(settings.turnstileSecretEncrypted);
+    let secret: string;
+    try {
+      secret = this.encryption.decrypt(settings.turnstileSecretEncrypted);
+    } catch {
+      this.logger.error(
+        'No se pudo descifrar la clave secreta de Turnstile. Recupera la APP_ENCRYPTION_KEY original o vuelve a guardar la Secret key en Configuración > Contacto con la clave de cifrado vigente.',
+      );
+      throw new ServiceUnavailableException(
+        'La verificación de seguridad no está disponible en este momento. Intenta más tarde.',
+      );
+    }
     const body = new URLSearchParams({ secret, response: token });
     if (ipAddress) body.set('remoteip', ipAddress);
     const response = await fetch(
