@@ -1,6 +1,8 @@
+import { SendcorexService } from '../sendcorex/sendcorex.service';
 import {
   BadRequestException,
   Injectable,
+  Optional,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
@@ -18,6 +20,7 @@ export class ContactsService {
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
     private readonly email: EmailService,
+    @Optional() private readonly sendcorex?: SendcorexService,
   ) {}
 
   private settings() {
@@ -106,16 +109,33 @@ export class ContactsService {
 
   async create(dto: CreateContactDto, ipAddress?: string, userAgent?: string) {
     await this.verifyTurnstile(dto.turnstileToken, ipAddress);
-    const request = await this.prisma.contactRequest.create({
-      data: {
-        name: dto.name,
-        email: dto.email.toLowerCase(),
-        phone: dto.phone,
-        subject: dto.subject,
-        message: dto.message,
-        ipAddress,
-        userAgent,
-      },
+    const request = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.contactRequest.create({
+        data: {
+          newsletterOptIn: dto.newsletterOptIn === true,
+          newsletterConsentAt: dto.newsletterOptIn === true ? new Date() : null,
+          name: dto.name,
+          email: dto.email.toLowerCase(),
+          phone: dto.phone,
+          subject: dto.subject,
+          message: dto.message,
+          ipAddress,
+          userAgent,
+        },
+      });
+      if (dto.newsletterOptIn === true)
+        await this.sendcorex?.enqueue(
+          tx,
+          `contact:${created.id}`,
+          'newsletter',
+          {
+            email: created.email,
+            name: created.name,
+            phone: created.phone,
+            tags: ['contacto'],
+          },
+        );
+      return created;
     });
     const settings = await this.settings();
     const [general, branding] = await Promise.all([

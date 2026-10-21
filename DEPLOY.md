@@ -1,12 +1,14 @@
 # Manual de despliegue — sin Docker
 
+**Actualización vigente del 21 de octubre de 2026:** si todavía no has desplegado analítica, blog, sitemap, Sendcorex, sincronización masiva e importador CSV, usa el [manual acumulado de esta entrega](./docs/DEPLOY-ACTUALIZACIONES-2026-10-21.md). No requiere seed. El seed fue corregido para conservar usuarios, contraseñas, configuración y plantillas existentes. La sección de masterclass que sigue describe una entrega anterior y su lista de migraciones no incluye las cinco nuevas de octubre 21.
+
 Este procedimiento despliega Luis Toledo Academy directamente desde la terminal en un servidor Linux. Para este servidor se conserva Node.js 20.20.0, con Ubuntu LTS, MySQL 8/MariaDB compatible, Nginx y PM2. No actualices el Node del sistema: el servidor comparte el runtime con otras webs. `.nvmrc` indica 20.20.0 para reproducir el entorno; no cambia Node ni PM2 automáticamente. Algunas dependencias declaran un mínimo superior y pueden emitir advertencias de engine; se deben distinguir de errores de instalación y validar compilación y pruebas con el runtime conservado.
 
 ## Actualización de masterclass en producción existente — PM2
 
 Esta entrega agrega una sola migración: `20261015000000_masterclass_registrations`. Crea `MasterclassRegistration`, sus índices y una clave foránea a `EmailQueue`. No contiene `DROP`, `TRUNCATE`, `DELETE`, `UPDATE` ni cambios a las tablas de usuarios, cursos, pedidos o configuración. Los dos correos de inscripción usan la cola existente y no necesitan seed ni tablas adicionales.
 
-**No ejecutes `npm run setup`, `npm run db:seed`, `prisma migrate reset`, `prisma migrate dev` ni `prisma db push` en esta actualización.** El seed actual puede cambiar la contraseña del administrador, eliminar el administrador local predeterminado y reemplazar plantillas de correo personalizadas. `setup` ejecuta ese seed. Los scripts `build`, `db:generate`, `db:status` y `db:deploy` no ejecutan seed. `start:prod` tiene un pre-script que aplica migraciones pendientes, por eso hay que revisar el estado antes de arrancarlo.
+**No ejecutes `npm run setup`, `npm run db:seed`, `prisma migrate reset`, `prisma migrate dev` ni `prisma db push` para actualizar masterclass.** En la versión anterior el seed podía cambiar la contraseña del administrador, eliminar el administrador local predeterminado y reemplazar plantillas de correo; esos comportamientos ya se corrigieron en la entrega acumulada del 21 de octubre. `setup` incluye seed y no es el procedimiento de actualización. Los scripts `build`, `db:generate`, `db:status` y `db:deploy` no ejecutan seed. `start:prod` tiene un pre-script que aplica migraciones pendientes, por eso hay que revisar el estado antes de arrancarlo.
 
 Estos pasos asumen `/var/www/luistoledo`, MySQL local y dos procesos PM2. Sustituye la ruta, usuario y nombre de base por los reales. Usa la misma cuenta del sistema que administra tus procesos PM2. No copies el `.env` ni la base de tu computadora sobre producción; conserva `DATABASE_URL`, `APP_ENCRYPTION_KEY`, las claves JWT y `backend/uploads/` del servidor.
 

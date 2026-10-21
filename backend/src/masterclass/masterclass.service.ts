@@ -1,6 +1,8 @@
+import { SendcorexService } from '../sendcorex/sendcorex.service';
 import {
   BadRequestException,
   Injectable,
+  Optional,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -31,6 +33,7 @@ export class MasterclassService {
     private readonly prisma: PrismaService,
     private readonly contacts: ContactsService,
     private readonly email: EmailService,
+    @Optional() private readonly sendcorex?: SendcorexService,
   ) {}
 
   async publicSettings() {
@@ -111,6 +114,17 @@ export class MasterclassService {
             notificationQueueId: queue?.id,
           },
         });
+        await this.sendcorex?.enqueue(
+          tx,
+          `masterclass:${registration.id}`,
+          'masterclass',
+          {
+            email: dto.email,
+            name: dto.name,
+            phone: dto.whatsapp,
+            tags: [`masterclass:${MASTERCLASS.key}`],
+          },
+        );
         const confirmation = await tx.emailQueue.create({
           data: this.confirmation(dto),
         });

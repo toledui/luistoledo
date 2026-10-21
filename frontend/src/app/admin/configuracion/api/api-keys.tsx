@@ -5,6 +5,7 @@ import styles from "./api-keys.module.css";
 
 type ApiKey = { id: string; name: string; prefix: string; scopes: string[]; expiresAt: string | null; revokedAt: string | null; lastUsedAt: string | null; createdAt: string };
 const areas = [
+  ["blog.manage", "Blog y categorías"],
   ["masterclass", "Masterclass"], ["courses.manage", "Cursos e inscripciones"],
   ["users.manage", "Usuarios"], ["orders.manage", "Pedidos y cupones"],
   ["media.manage", "Multimedia"], ["settings.manage", "Configuración y comunicaciones"],

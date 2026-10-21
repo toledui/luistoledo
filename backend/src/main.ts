@@ -13,6 +13,17 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 4000);
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
+  const trustedProxies = config.get<string>('TRUSTED_PROXY_CIDRS');
+  if (trustedProxies) {
+    const server = app.getHttpAdapter().getInstance() as express.Express;
+    server.set(
+      'trust proxy',
+      trustedProxies
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    );
+  }
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   app.use(cookieParser());

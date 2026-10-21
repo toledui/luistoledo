@@ -24,13 +24,14 @@ export function SiteFooter() {
         <div>
           <h3>Explorar</h3>
           <Link href="/cursos">Cursos</Link>
+          <Link href="/eventos">Eventos</Link>
           <Link href="/#metodo">Metodología</Link>
           <Link href="/#sobre-mi">Sobre Luis</Link>
         </div>
 
         <div>
           <h3>Recursos</h3>
-          <span>Blog</span>
+          <Link href="/blog">Blog</Link>
           <span>Guías gratuitas</span>
           <Link href="/#faq">Preguntas frecuentes</Link>
         </div>

@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
@@ -7,6 +8,7 @@ import {
 } from 'class-validator';
 
 export class CreateContactDto {
+  @IsOptional() @IsBoolean() newsletterOptIn?: boolean;
   @IsString() @MinLength(2) @MaxLength(160) name!: string;
   @IsEmail() @MaxLength(191) email!: string;
   @IsOptional() @IsString() @MaxLength(40) phone?: string;

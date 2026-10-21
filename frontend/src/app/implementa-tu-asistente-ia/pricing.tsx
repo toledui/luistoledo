@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, LockKeyhole } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { ProductView } from "@/components/analytics/product-view";
 import {
   formatMxn,
   paidCourseClose,
@@ -43,6 +44,7 @@ export function Pricing() {
     return <p role="status">Preparando tus opciones de inscripción…</p>;
   return (
     <>
+      <ProductView id={offer.courseId || "asistente-ia-noviembre-2026"} title={offer.title} value={offer.cashPrice} />
       <div className={styles.prices}>
         <article className={styles.cash}>
           <div className={styles.priceBadge}>La mejor inversión</div>

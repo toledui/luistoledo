@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import styles from "./cart.module.css";
+import { trackEvent } from "@/lib/analytics";
 export type LocalCartItem = {
   id: string;
   title: string;
@@ -45,24 +46,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(key, JSON.stringify(next));
     window.dispatchEvent(new Event("lta-cart"));
   }, []);
-  const add = useCallback((item: LocalCartItem) => {
-    setItems((current) => {
-      const next = current.some((x) => x.id === item.id)
-        ? current
-        : [...current, item];
-      localStorage.setItem(key, JSON.stringify(next));
-      return next;
-    });
-    setOpen(true);
-  }, []);
+  const add = useCallback(
+    (item: LocalCartItem) => {
+      if (!items.some((x) => x.id === item.id)) {
+        save([...items, item]);
+        void trackEvent("add_to_cart", {
+          itemId: item.id,
+          itemName: item.title.slice(0, 100),
+          value: Number(item.salePrice || item.price),
+          currency: "MXN",
+        });
+      }
+      setOpen(true);
+    },
+    [items, save],
+  );
   const remove = useCallback(
-    (id: string) =>
-      setItems((current) => {
-        const next = current.filter((x) => x.id !== id);
-        localStorage.setItem(key, JSON.stringify(next));
-        return next;
-      }),
-    [],
+    (id: string) => {
+      const item = items.find((x) => x.id === id);
+      save(items.filter((x) => x.id !== id));
+      if (item)
+        void trackEvent("remove_from_cart", {
+          itemId: item.id,
+          itemName: item.title.slice(0, 100),
+          value: Number(item.salePrice || item.price),
+          currency: "MXN",
+        });
+    },
+    [items, save],
   );
   const clear = useCallback(() => save([]), [save]);
   const value = useMemo(

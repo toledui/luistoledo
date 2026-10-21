@@ -70,6 +70,7 @@ export function ContactForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          newsletterOptIn: form.get("newsletterOptIn") === "on",
           name: form.get("name"),
           email: form.get("email"),
           phone: form.get("phone") || undefined,
@@ -110,15 +111,24 @@ export function ContactForm() {
           <div className={styles.details}>
             <article>
               <Clock3 />
-              <div><strong>Respuesta ágil</strong><small>Normalmente dentro de un día hábil.</small></div>
+              <div>
+                <strong>Respuesta ágil</strong>
+                <small>Normalmente dentro de un día hábil.</small>
+              </div>
             </article>
             <article>
               <Mail />
-              <div><strong>Atención directa</strong><small>Recibirás la respuesta en tu correo.</small></div>
+              <div>
+                <strong>Atención directa</strong>
+                <small>Recibirás la respuesta en tu correo.</small>
+              </div>
             </article>
             <article>
               <ShieldCheck />
-              <div><strong>Datos protegidos</strong><small>Tu información no se comparte con terceros.</small></div>
+              <div>
+                <strong>Datos protegidos</strong>
+                <small>Respetamos tus preferencias de comunicación.</small>
+              </div>
             </article>
           </div>
         </section>
@@ -137,7 +147,10 @@ export function ContactForm() {
               <header className={styles.formHeader}>
                 <span>Formulario de contacto</span>
                 <h2>Escríbenos un mensaje</h2>
-                <p>Completa los datos y cuéntanos con detalle cómo podemos ayudarte.</p>
+                <p>
+                  Completa los datos y cuéntanos con detalle cómo podemos
+                  ayudarte.
+                </p>
               </header>
               <div className={styles.grid}>
                 <label>
@@ -185,6 +198,14 @@ export function ContactForm() {
                   />
                 </label>
               </div>
+              <label className={styles.newsletter}>
+                <input type="checkbox" name="newsletterOptIn" defaultChecked />
+                <span>
+                  Quiero recibir el boletín informativo y novedades por correo.
+                  Puedo darme de baja cuando quiera.{" "}
+                  <a href="/privacidad">Aviso de privacidad</a>.
+                </span>
+              </label>
               {settings?.turnstileEnabled && (
                 <div ref={widget} className={styles.turnstile} />
               )}

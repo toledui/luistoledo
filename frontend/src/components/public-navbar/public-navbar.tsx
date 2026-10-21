@@ -20,6 +20,8 @@ export function PublicNavbar() {
         </Link>
         <nav>
           <Link href="/cursos" onClick={() => setOpen(false)}>Cursos</Link>
+          <Link href="/eventos" onClick={() => setOpen(false)}>Eventos</Link>
+          <Link href="/blog" onClick={() => setOpen(false)}>Blog</Link>
           <Link href="/#metodo" onClick={() => setOpen(false)}>Metodología</Link>
           <Link href="/#sobre-mi" onClick={() => setOpen(false)}>Sobre mí</Link>
           <Link href="/#faq" onClick={() => setOpen(false)}>Preguntas</Link>
@@ -42,6 +44,8 @@ export function PublicNavbar() {
       {open && (
         <div className={styles.mobile} id="mobile-navigation">
           <Link href="/cursos" onClick={() => setOpen(false)}>Cursos</Link>
+          <Link href="/eventos" onClick={() => setOpen(false)}>Eventos</Link>
+          <Link href="/blog" onClick={() => setOpen(false)}>Blog</Link>
           <Link href="/#metodo" onClick={() => setOpen(false)}>Metodología</Link>
           <Link href="/#sobre-mi" onClick={() => setOpen(false)}>Sobre mí</Link>
           <Link href="/#faq" onClick={() => setOpen(false)}>Preguntas</Link>

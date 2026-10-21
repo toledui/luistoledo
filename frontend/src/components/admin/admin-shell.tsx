@@ -5,6 +5,8 @@ import {
   BookOpen,
   ChevronRight,
   CircleGauge,
+  ChartNoAxesCombined,
+  Newspaper,
   LogOut,
   Menu,
   Images,
@@ -34,12 +36,15 @@ export const useSessionUser = () => useContext(SessionContext);
 
 const navigation = [
   { href: "/admin", label: "Resumen", icon: CircleGauge },
+  { href: "/admin/analitica", label: "Analítica", icon: ChartNoAxesCombined },
   { href: "/admin/cursos", label: "Cursos", icon: BookOpen },
+  { href: "/admin/blog", label: "Blog", icon: Newspaper },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/pedidos", label: "Pedidos", icon: ReceiptText },
   { href: "/admin/cupones", label: "Cupones", icon: TicketPercent },
   { href: "/admin/medios", label: "Medios", icon: Images },
   { href: "/admin/contacto", label: "Contacto", icon: MessageSquare },
+  { href: "/admin/contactos-sendcorex", label: "Contactos / Sendcorex", icon: Users },
   { href: "/admin/masterclass", label: "Masterclass", icon: Users },
   { href: "/admin/inscripciones-ia", label: "Curso de IA", icon: BookOpen },
   {

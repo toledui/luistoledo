@@ -1,5 +1,6 @@
 "use client";
 import { apiFetch } from "@/lib/api";
+import { ProductView } from "@/components/analytics/product-view";
 import {
   BookOpen,
   CheckCircle2,
@@ -167,6 +168,7 @@ export function CoursePublicView({
     );
   return (
     <main className={styles.page}>
+      {!adminPreview && !course.adminPreview && <ProductView id={course.id} title={course.title} value={Number(course.salePrice || course.price)} />}
       {course.adminPreview && (
         <div className={styles.previewBar}>
           <span>

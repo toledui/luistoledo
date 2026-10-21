@@ -5,6 +5,7 @@ import { EncryptionService } from '../crypto/encryption.service';
 import { EmailTemplateService } from '../email-templates/email-template.service';
 import { PaidCourseService } from '../paid-course/paid-course.service';
 import { SalesService } from './sales.service';
+import { SendcorexService } from '../sendcorex/sendcorex.service';
 jest.mock('../email-templates/email-template.service', () => ({
   EmailTemplateService: class {},
 }));
@@ -24,6 +25,7 @@ describe('Atomic payment confirmation shared by transfer and Stripe', () => {
   };
   const course = { onPaid: jest.fn() };
   const templates = { sendEvent: jest.fn() };
+  const sendcorex = { enrollment: jest.fn() };
   const order = {
     id: 'deposit',
     number: 'LTA-TEST',
@@ -52,11 +54,18 @@ describe('Atomic payment confirmation shared by transfer and Stripe', () => {
       {} as ConfigService,
       templates as unknown as EmailTemplateService,
       course as unknown as PaidCourseService,
+      undefined,
+      sendcorex as unknown as SendcorexService,
     );
   });
   it('confirms the payment and activates the enrollment in the same transaction as the installment plan', async () => {
     await sales.approveBankTransfer('deposit');
     expect(course.onPaid).toHaveBeenCalledWith(prisma, order, 'BANK_TRANSFER');
+    expect(sendcorex.enrollment).toHaveBeenCalledWith(
+      prisma,
+      'student',
+      'course',
+    );
     expect(prisma.enrollment.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
@@ -79,6 +88,7 @@ describe('Atomic payment confirmation shared by transfer and Stripe', () => {
     expect(course.onPaid).not.toHaveBeenCalled();
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
     expect(prisma.enrollment.upsert).not.toHaveBeenCalled();
+    expect(sendcorex.enrollment).not.toHaveBeenCalled();
   });
   it('does not reactivate an enrollment when paying later installments', async () => {
     prisma.order.findUniqueOrThrow.mockResolvedValue({
@@ -88,5 +98,6 @@ describe('Atomic payment confirmation shared by transfer and Stripe', () => {
     await sales.approveBankTransfer('deposit');
     expect(course.onPaid).toHaveBeenCalled();
     expect(prisma.enrollment.upsert).not.toHaveBeenCalled();
+    expect(sendcorex.enrollment).not.toHaveBeenCalled();
   });
 });

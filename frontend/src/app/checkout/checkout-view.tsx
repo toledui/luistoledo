@@ -1,6 +1,7 @@
 "use client";
 import { useCart } from "@/components/cart/cart-context";
 import { apiFetch } from "@/lib/api";
+import { CheckoutEvent } from "@/components/analytics/product-view";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -237,6 +238,30 @@ export function CheckoutView({
   return (
     <>
       <main className={styles.page}>
+        {canPay && (
+          <CheckoutEvent
+            value={Number(
+              program ? amountNow : (couponSummary?.total ?? cart.total),
+            )}
+            items={
+              program && offer
+                ? [
+                    {
+                      item_id: offer.courseId || "asistente-ia-noviembre-2026",
+                      item_name: offer.title.slice(0, 100),
+                      price: amountNow,
+                      quantity: 1,
+                    },
+                  ]
+                : cart.items.map((item) => ({
+                    item_id: item.id,
+                    item_name: item.title.slice(0, 100),
+                    price: Number(item.salePrice || item.price),
+                    quantity: 1,
+                  }))
+            }
+          />
+        )}
         <div className={styles.checkout}>
           <section>
             <span>Finalizar compra</span>

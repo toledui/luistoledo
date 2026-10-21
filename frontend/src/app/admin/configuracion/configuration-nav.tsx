@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./configuration-layout.module.css";
 const sections = [
+  { href: "/admin/configuracion/sendcorex", label: "Sendcorex", description: "Contactos y newsletter", icon: Mail },
+  { href: "/admin/configuracion/analitica", label: "Analítica", description: "Google y Meta", icon: Settings2 },
   { href: "/admin/configuracion/api", label: "API y agentes", description: "Claves y acceso MCP", icon: KeyRound },
   {
     href: "/admin/configuracion/inicial",

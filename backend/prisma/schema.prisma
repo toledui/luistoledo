@@ -104,6 +104,52 @@ enum PaymentMode {
   LIVE
 }
 
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogCategory {
+  id String @id @default(cuid())
+  name String @db.VarChar(100)
+  slug String @unique @db.VarChar(191)
+  description String? @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts BlogPost[]
+}
+
+model BlogPost {
+  id String @id @default(cuid())
+  title String @db.VarChar(191)
+  slug String @unique @db.VarChar(191)
+  excerpt String @default("") @db.VarChar(500)
+  coverUrl String? @db.Text
+  coverAlt String? @db.VarChar(250)
+  authorName String @db.VarChar(150)
+  createdById String @db.VarChar(64)
+  categoryId String?
+  category BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  status BlogPostStatus @default(DRAFT)
+  blocks Json
+  seoTitle String? @db.VarChar(191)
+  seoDescription String? @db.VarChar(300)
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  previousSlugs BlogPostSlug[]
+  @@index([status, publishedAt])
+  @@index([categoryId, status, publishedAt])
+}
+
+model BlogPostSlug {
+  slug String @id @db.VarChar(191)
+  postId String
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId])
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique @db.VarChar(191)
@@ -297,6 +343,8 @@ model ContactSetting {
 }
 
 model ContactRequest {
+  newsletterOptIn Boolean @default(false)
+  newsletterConsentAt DateTime?
   id        String   @id @default(cuid())
   name      String   @db.VarChar(160)
   email     String   @db.VarChar(191)
@@ -312,6 +360,70 @@ model ContactRequest {
 
   @@index([status, createdAt])
   @@index([email])
+}
+
+model SendcorexSetting {
+  id Int @id @default(1)
+  enabled Boolean @default(false)
+  apiKeyEncrypted String? @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model SendcorexSyncRun {
+  id Int @id @default(1)
+  status String @default("IDLE") @db.VarChar(20)
+  stage Int @default(0)
+  cursor String? @db.VarChar(191)
+  scanned Int @default(0)
+  startedAt DateTime?
+  completedAt DateTime?
+  leaseToken String? @db.VarChar(36)
+  leaseUntil DateTime?
+  actorId String? @db.VarChar(191)
+  updatedAt DateTime @updatedAt
+}
+
+model SendcorexImportedContact {
+  id String @id @default(cuid())
+  email String @unique @db.VarChar(191)
+  name String @db.VarChar(160)
+  phone String? @db.VarChar(40)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SendcorexImportRun {
+  id String @id @default(cuid())
+  status String @default("PENDING") @db.VarChar(20)
+  filename String @db.VarChar(191)
+  rows Json
+  total Int
+  processed Int @default(0)
+  invalid Int @default(0)
+  duplicates Int @default(0)
+  leaseToken String? @db.VarChar(36)
+  leaseUntil DateTime?
+  actorId String? @db.VarChar(191)
+  lastError String? @db.VarChar(191)
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([status, createdAt])
+}
+
+model SendcorexDelivery {
+  id String @id @default(cuid())
+  dedupeKey String @unique @db.VarChar(191)
+  source String @db.VarChar(30)
+  payload Json
+  status String @default("PENDING") @db.VarChar(20)
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  leaseToken String? @db.VarChar(36)
+  lastError String? @db.VarChar(191)
+  deliveredAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, nextAttemptAt])
 }
 
 model PaymentProviderSetting {
@@ -653,6 +765,7 @@ model Order {
   paymentPlanId String?
   paymentPlan CoursePaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: Restrict)
   installmentNumber Int?
+  analyticsSessionId String? @db.VarChar(64)
   dueAt DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
@@ -661,6 +774,83 @@ model Order {
   @@index([status, createdAt])
   @@unique([paymentPlanId, installmentNumber])
   @@index([dueAt, status])
+}
+
+model AnalyticsSetting {
+  id Int @id @default(1)
+  enabled Boolean @default(true)
+  gtmId String? @db.VarChar(40)
+  gaMeasurementId String? @db.VarChar(40)
+  gaPropertyId String? @db.VarChar(40)
+  metaPixelId String? @db.VarChar(40)
+  metaApiVersion String @default("v25.0") @db.VarChar(20)
+  searchConsoleSite String? @db.VarChar(255)
+  gaSecretEncrypted String? @db.Text
+  metaTokenEncrypted String? @db.Text
+  googleCredentialsEncrypted String? @db.Text
+  retainIpDays Int @default(7)
+  retainEventsDays Int @default(90)
+  updatedAt DateTime @updatedAt
+}
+
+model AnalyticsSession {
+  id String @id @db.VarChar(64)
+  visitorId String @db.VarChar(64)
+  userId String? @db.VarChar(64)
+  analyticsConsent Boolean
+  advertisingConsent Boolean
+  consentVersion String @default("2026-10-21") @db.VarChar(20)
+  consentAt DateTime @default(now())
+  entryPath String @db.VarChar(500)
+  referrer String? @db.VarChar(255)
+  source String @db.VarChar(150)
+  medium String @db.VarChar(100)
+  campaign String? @db.VarChar(150)
+  term String? @db.VarChar(150)
+  firstSource String @db.VarChar(150)
+  lastNonDirectSource String @db.VarChar(150)
+  ipEncrypted String? @db.Text
+  userAgent String? @db.VarChar(500)
+  gaClientId String? @db.VarChar(100)
+  gaSessionId String? @db.VarChar(40)
+  fbp String? @db.VarChar(150)
+  fbc String? @db.VarChar(255)
+  createdAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  events AnalyticsEvent[]
+  @@index([createdAt, source])
+  @@index([visitorId, createdAt])
+}
+
+model AnalyticsEvent {
+  id String @id @db.VarChar(100)
+  sessionId String? @db.VarChar(64)
+  session AnalyticsSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  name String @db.VarChar(40)
+  path String @db.VarChar(500)
+  source String @db.VarChar(150)
+  origin String @db.VarChar(20)
+  value Decimal? @db.Decimal(12,2)
+  currency String? @db.VarChar(3)
+  data Json?
+  createdAt DateTime @default(now())
+  deliveries AnalyticsDelivery[]
+  @@index([createdAt, name])
+  @@index([source, createdAt])
+}
+
+model AnalyticsDelivery {
+  id String @id @default(cuid())
+  eventId String @db.VarChar(100)
+  event AnalyticsEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  provider String @db.VarChar(10)
+  status String @default("PENDING") @db.VarChar(20)
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  lastError String? @db.VarChar(200)
+  sentAt DateTime?
+  @@unique([eventId, provider])
+  @@index([status, nextAttemptAt])
 }
 
 model CoursePaymentPlan {

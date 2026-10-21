@@ -36,12 +36,16 @@ const sections = [
   {
     title: "Cookies y tecnologías",
     paragraphs: [
-      "Utilizamos cookies necesarias para mantener sesiones, seguridad, carrito y preferencias. También podemos usar servicios de terceros estrictamente necesarios, como Stripe para pagos y Cloudflare Turnstile para prevenir envíos automatizados. Si incorporamos herramientas analíticas o publicitarias no esenciales, se informará su finalidad y los controles disponibles.",
+      "Utilizamos cookies necesarias para mantener sesiones, seguridad, carrito y preferencias. También usamos servicios como Stripe para pagos y Cloudflare Turnstile para prevenir envíos automatizados. Puedes aceptar o rechazar de forma independiente las cookies de analítica y publicidad mediante el control ‘Privacidad y cookies’ del sitio, y cambiar tu elección posteriormente.",
+      "Si aceptas la analítica, registramos identificadores de navegador y sesión, páginas visitadas, eventos, referente disponible y parámetros de campaña para conocer la procedencia y los resultados del sitio. Podemos utilizar Google Analytics 4 y Google Tag Manager. Las direcciones IP se conservan cifradas por un máximo configurable de 30 días (7 días por defecto), con acceso restringido; las sesiones y eventos se conservan 90 días por defecto, hasta el límite configurado de 365 días.",
+      "Si aceptas la publicidad, compartimos eventos de navegación y conversiones con Meta mediante Meta Pixel y Conversions API, y habilitamos las señales publicitarias configuradas de Google. Esto puede incluir identificadores publicitarios, un identificador seudónimo, información de navegador y datos de la compra. No enviamos contraseñas, datos de tarjeta ni mensajes de formularios a estas herramientas. Los proveedores pueden procesar la información fuera de México conforme a sus condiciones.",
+      "La procedencia se identifica cuando el navegador o la campaña la proporciona. No conocemos las preguntas escritas en asistentes de IA ni vinculamos consultas orgánicas de Google con visitantes individuales. Al retirar el consentimiento dejamos de recopilar y enviar nuevos eventos de la categoría correspondiente; puedes solicitar la eliminación de registros anteriores mediante los medios de contacto indicados en este aviso.",
     ],
   },
   {
     title: "Transferencias y encargados",
     paragraphs: [
+      "Utilizamos Sendcorex para gestionar contactos inscritos en cursos y masterclasses, y para el boletín cuando seleccionas esa opción en el formulario de contacto. Compartimos nombre, correo, teléfono disponible y etiquetas de procedencia; no enviamos el contenido de tu mensaje. Puedes desmarcar la casilla del boletín antes de enviar el formulario y darte de baja mediante el enlace de los correos o nuestros medios de contacto. La inscripción académica no se registra como aceptación del boletín.",
       "Podemos compartir datos limitados con proveedores que procesan información por nuestra cuenta, como alojamiento, correo transaccional, pagos y seguridad. Estos proveedores reciben sólo la información necesaria para prestar su servicio. No vendemos datos personales.",
     ],
   },

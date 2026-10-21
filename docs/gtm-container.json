@@ -1,0 +1,363 @@
+{
+  "exportFormatVersion": 2,
+  "containerVersion": {
+    "container": {
+      "name": "Luis Toledo Academy - Analytics",
+      "usageContext": [
+        "WEB"
+      ]
+    },
+    "tag": [
+      {
+        "tagId": "1",
+        "name": "Google tag - no automatic page views",
+        "type": "googtag",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "tagId",
+            "value": "{{DLV - ga_measurement_id}}"
+          },
+          {
+            "type": "LIST",
+            "key": "configSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "send_page_view"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{JS - False}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_location"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{JS - Safe location}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_referrer"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{JS - Safe referrer}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": [
+          "2147479553"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      },
+      {
+        "tagId": "2",
+        "name": "GA4 - application browser events",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "measurementIdOverride",
+            "value": "{{DLV - ga_measurement_id}}"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "eventName",
+            "value": "{{DLV - event_name}}"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "sendEcommerceData",
+            "value": "true"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "getEcommerceDataFrom",
+            "value": "dataLayer"
+          },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "event_id"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - event_id}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_location"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - page_location}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "page_referrer"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - page_referrer}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "currency"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - currency}}"
+                  }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameter",
+                    "value": "value"
+                  },
+                  {
+                    "type": "TEMPLATE",
+                    "key": "parameterValue",
+                    "value": "{{DLV - value}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": [
+          "1"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT"
+      }
+    ],
+    "trigger": [
+      {
+        "triggerId": "1",
+        "name": "Application - lta_event",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "lta_event"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {
+        "name": "DLV - ga_measurement_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "ga_measurement_id"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - event_name",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "event_name"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - event_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "event_id"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - page_location",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "page_location"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - page_referrer",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "page_referrer"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - currency",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "currency"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "DLV - value",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "value"
+          },
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "name": "JS - False",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function(){ return false; }"
+          }
+        ]
+      },
+      {
+        "name": "JS - Safe location",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function(){ return location.origin + location.pathname.replace(/(\\/certificados\\/verificar\\/)[^/]+/, \"$1[code]\"); }"
+          }
+        ]
+      },
+      {
+        "name": "JS - Safe referrer",
+        "type": "jsm",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "javascript",
+            "value": "function(){ try { var u = new URL(document.referrer); return u.origin === location.origin ? \"\" : u.origin; } catch(e){ return \"\"; } }"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,8 +1,10 @@
+import { SendcorexService } from '../sendcorex/sendcorex.service';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CourseStatus,
@@ -20,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCouponDto, UpdatePaymentSettingsDto } from './dto/sales.dto';
 import { ListOrdersDto } from './dto/list-orders.dto';
 import { PaidCourseService } from '../paid-course/paid-course.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class SalesService {
@@ -29,6 +32,8 @@ export class SalesService {
     private readonly config: ConfigService,
     private readonly emailTemplates: EmailTemplateService,
     private readonly paidCourse: PaidCourseService,
+    @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() private readonly sendcorex?: SendcorexService,
   ) {}
 
   private orderInclude() {
@@ -405,7 +410,15 @@ export class SalesService {
     couponCode?: string,
     program?: 'asistente-ia',
     paymentOption?: 'FULL' | 'INSTALLMENTS',
+    analyticsSessionId?: string,
   ) {
+    const analyticsSession =
+      await this.analytics?.sessionFromHeader(analyticsSessionId);
+    if (analyticsSession)
+      await this.prisma.analyticsSession.update({
+        where: { id: analyticsSession.id },
+        data: { userId },
+      });
     const paymentSettings = await this.paymentSettingsRecord();
     if (paymentMethod === 'STRIPE' && !paymentSettings.stripeEnabled)
       throw new BadRequestException('Stripe no está disponible');
@@ -428,6 +441,12 @@ export class SalesService {
         paymentOption,
         paymentMethod,
       );
+      if (analyticsSession && !order.analyticsSessionId) {
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { analyticsSessionId: analyticsSession.id },
+        });
+      }
       if (paymentMethod === 'BANK_TRANSFER') return { order, paymentMethod };
       const resumed = await this.resumePayment(userId, order.id);
       return { order, paymentMethod, checkoutUrl: resumed.checkoutUrl };
@@ -457,6 +476,7 @@ export class SalesService {
         data: {
           number,
           userId,
+          analyticsSessionId: analyticsSession?.id,
           status:
             paymentMethod === 'BANK_TRANSFER'
               ? OrderStatus.AWAITING_PAYMENT
@@ -584,7 +604,7 @@ export class SalesService {
         );
       await this.paidCourse.onPaid(tx, order, provider);
       if (!order.paymentPlanId || order.installmentNumber === 1) {
-        for (const item of order.items)
+        for (const item of order.items) {
           await tx.enrollment.upsert({
             where: {
               userId_courseId: {
@@ -603,6 +623,8 @@ export class SalesService {
               source: order.paymentPlanId ? 'PAID_COURSE' : 'PURCHASE',
             },
           });
+          await this.sendcorex?.enrollment(tx, order.userId, item.courseId);
+        }
       }
       if (order.couponId) {
         await tx.coupon.update({
@@ -625,6 +647,7 @@ export class SalesService {
         await tx.cartItem.deleteMany({
           where: { cart: { userId: order.userId } },
         });
+      await this.analytics?.purchase(tx, order);
       return true;
     });
     const updated = await this.prisma.order.findUniqueOrThrow({

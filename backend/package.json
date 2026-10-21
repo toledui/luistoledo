@@ -21,12 +21,16 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:openapi": "npm run build && node test/openapi-pagination.cjs",
     "test:paid-course:integration": "npm run build && node test/paid-course.integration.cjs",
+    "test:analytics:integration": "npm run build && node test/analytics.integration.cjs",
+    "test:blog:integration": "npm run build && node test/blog.integration.cjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:status": "prisma migrate status",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test:sendcorex:integration": "npm run build && node test/sendcorex.integration.cjs",
+    "test:seed:integration": "npm run build && node test/seed-preservation.integration.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

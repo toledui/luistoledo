@@ -70,6 +70,7 @@ export class SalesController {
   @Post('checkout') @UseGuards(AuthGuard) checkout(
     @Body() dto: CheckoutDto,
     @Req() req: AuthenticatedRequest,
+    @Headers('x-lta-session') analyticsSessionId?: string,
   ) {
     return this.sales.checkout(
       req.auth.sub,
@@ -77,6 +78,7 @@ export class SalesController {
       dto.couponCode,
       dto.program,
       dto.paymentOption,
+      analyticsSessionId,
     );
   }
   @Post('payments/stripe/confirm')

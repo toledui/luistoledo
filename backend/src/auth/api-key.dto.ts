@@ -15,6 +15,7 @@ export const API_KEY_SCOPES = [
   'masterclass:write',
   ...[
     'courses.manage',
+    'blog.manage',
     'users.manage',
     'orders.manage',
     'media.manage',

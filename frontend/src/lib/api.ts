@@ -1,5 +1,6 @@
 const apiUrl =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+import { analyticsHeaders, confirmedBrowserEvent } from "./analytics";
 
 export class ApiError extends Error {
   constructor(
@@ -11,7 +12,23 @@ export class ApiError extends Error {
 }
 
 async function request(path: string, init?: RequestInit) {
-  return fetch(`${apiUrl}${path}`, { ...init, credentials: "include" });
+  const headers = new Headers(init?.headers);
+  if (
+    typeof window !== "undefined" &&
+    init?.method &&
+    !["GET", "HEAD"].includes(init.method) &&
+    !path.startsWith("/admin") &&
+    !path.startsWith("/analytics")
+  ) {
+    const tracking = await analyticsHeaders().catch(() => ({}));
+    for (const [key, value] of Object.entries(tracking))
+      headers.set(key, value);
+  }
+  return fetch(`${apiUrl}${path}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
 }
 
 export async function apiFetch<T>(
@@ -40,7 +57,9 @@ export async function apiFetch<T>(
   const text = await response.text();
   if (!text.trim()) return undefined as T;
   try {
-    return JSON.parse(text) as T;
+    const result = JSON.parse(text) as T;
+    if (typeof window !== "undefined") confirmedBrowserEvent(result);
+    return result;
   } catch {
     throw new ApiError(
       response.status,

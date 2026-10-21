@@ -1,4 +1,5 @@
 export type PaidCourseOffer = {
+  courseId?: string;
   program: string;
   title: string;
   registrationClosesAt: string;

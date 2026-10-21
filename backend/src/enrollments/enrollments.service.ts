@@ -1,7 +1,9 @@
+import { SendcorexService } from '../sendcorex/sendcorex.service';
 import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Optional,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -15,7 +17,10 @@ import { CatalogQueryDto } from './dto/enrollment.dto';
 
 @Injectable()
 export class EnrollmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly sendcorex?: SendcorexService,
+  ) {}
   catalog(query: CatalogQueryDto) {
     const level = Object.values(CourseLevel).includes(
       query.level as CourseLevel,
@@ -67,15 +72,19 @@ export class EnrollmentsService {
     });
     if (existing?.status === EnrollmentStatus.ACTIVE)
       throw new ConflictException('Ya estás inscrito en este curso');
-    return this.prisma.enrollment.upsert({
-      where: { userId_courseId: { userId, courseId } },
-      update: { status: EnrollmentStatus.ACTIVE, source: 'FREE' },
-      create: {
-        userId,
-        courseId,
-        status: EnrollmentStatus.ACTIVE,
-        source: 'FREE',
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.enrollment.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        update: { status: EnrollmentStatus.ACTIVE, source: 'FREE' },
+        create: {
+          userId,
+          courseId,
+          status: EnrollmentStatus.ACTIVE,
+          source: 'FREE',
+        },
+      });
+      await this.sendcorex?.enrollment(tx, userId, courseId);
+      return result;
     });
   }
   mine(userId: string) {
@@ -122,37 +131,46 @@ export class EnrollmentsService {
     ]);
     if (!course || !user)
       throw new NotFoundException('Curso o usuario no encontrado');
-    return this.prisma.enrollment.upsert({
-      where: { userId_courseId: { userId, courseId } },
-      update: { status: EnrollmentStatus.ACTIVE, source: 'MANUAL' },
-      create: {
-        userId,
-        courseId,
-        status: EnrollmentStatus.ACTIVE,
-        source: 'MANUAL',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            status: true,
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.enrollment.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        update: { status: EnrollmentStatus.ACTIVE, source: 'MANUAL' },
+        create: {
+          userId,
+          courseId,
+          status: EnrollmentStatus.ACTIVE,
+          source: 'MANUAL',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              status: true,
+            },
           },
         },
-      },
+      });
+      await this.sendcorex?.enrollment(tx, userId, courseId);
+      return result;
     });
   }
   update(id: string, status: EnrollmentStatus) {
-    return this.prisma.enrollment.update({
-      where: { id },
-      data: {
-        status,
-        ...(status === EnrollmentStatus.COMPLETED
-          ? { completedAt: new Date() }
-          : {}),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.enrollment.update({
+        where: { id },
+        data: {
+          status,
+          ...(status === EnrollmentStatus.COMPLETED
+            ? { completedAt: new Date() }
+            : {}),
+        },
+      });
+      if (status === EnrollmentStatus.ACTIVE)
+        await this.sendcorex?.enrollment(tx, result.userId, result.courseId);
+      return result;
     });
   }
   async remove(id: string) {

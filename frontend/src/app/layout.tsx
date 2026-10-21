@@ -6,6 +6,8 @@ import { CartProvider } from "@/components/cart/cart-context";
 import { PublicShell } from "@/components/public-shell/public-shell";
 import { ScrollToTop } from "@/components/scroll-to-top/scroll-to-top";
 import { getSiteMetadata } from "@/lib/site-metadata";
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
+import { Suspense } from "react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,6 +37,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body>
+        <Suspense fallback={null}><AnalyticsProvider /></Suspense>
         <CartProvider>
           <ScrollToTop />
           <PublicBranding />

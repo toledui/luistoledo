@@ -1,3 +1,4 @@
+import { SendcorexModule } from './sendcorex/sendcorex.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -21,6 +22,8 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { SalesModule } from './sales/sales.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { MasterclassModule } from './masterclass/masterclass.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { BlogModule } from './blog/blog.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { MasterclassModule } from './masterclass/masterclass.module';
     SalesModule,
     ContactsModule,
     MasterclassModule,
+    AnalyticsModule,
+    BlogModule,
+    SendcorexModule,
   ],
   controllers: [AppController],
   providers: [AppService],
