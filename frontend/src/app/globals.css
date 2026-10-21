@@ -1518,6 +1518,7 @@ svg {
 }
 
 .footer-bottom div {
+  flex-wrap: wrap;
   display: flex;
   gap: 20px;
 }

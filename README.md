@@ -11,6 +11,7 @@ Sistema LMS y de comercio electrónico para cursos en línea.
 - [Analítica: Google, Meta y panel administrativo](./docs/ANALITICA.md)
 - [Blog, constructor y sitemap automático](./docs/BLOG.md)
 - [Sendcorex: inscripciones y newsletter](./docs/SENDCOREX.md)
+- [Aviso de privacidad, cookies y preferencias](./docs/PRIVACIDAD-Y-COOKIES.md)
 - [API keys y conexión MCP para Hermes](./mcp/README.md)
 
 ## Desarrollo local

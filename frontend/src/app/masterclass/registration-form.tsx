@@ -262,7 +262,7 @@ export function MasterclassForm() {
             <span>
               He leído el{" "}
               <Link
-                href="/privacidad"
+                href="/aviso-de-privacidad"
                 target="_blank"
                 rel="noopener noreferrer"
               >

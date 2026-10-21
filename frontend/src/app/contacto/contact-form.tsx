@@ -203,7 +203,7 @@ export function ContactForm() {
                 <span>
                   Quiero recibir el boletín informativo y novedades por correo.
                   Puedo darme de baja cuando quiera.{" "}
-                  <a href="/privacidad">Aviso de privacidad</a>.
+                  <a href="/aviso-de-privacidad">Aviso de privacidad</a>.
                 </span>
               </label>
               {settings?.turnstileEnabled && (

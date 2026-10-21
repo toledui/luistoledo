@@ -12,7 +12,7 @@ const configuration = {
   enabled: true,
   gaMeasurementId: "G-TEST",
   metaPixelId: "123456",
-  consentVersion: "2026-10-21",
+  consentVersion: "2026-10-21.2",
 };
 beforeEach(() => {
   localStorage.clear();
@@ -27,6 +27,21 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("Consent-gated analytics", () => {
+  it("asks for a new choice when the saved consent belongs to the previous notice", async () => {
+    localStorage.setItem(
+      "lta_consent_v1",
+      JSON.stringify({
+        analytics: true,
+        advertising: true,
+        version: "2026-10-21",
+        at: Date.now(),
+      }),
+    );
+    await initializeAnalytics(configuration);
+    expect(readConsent()).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(document.querySelector("script")).toBeNull();
+  });
   it("loads no vendor scripts and sends no telemetry before consent", async () => {
     await initializeAnalytics(configuration);
     await trackEvent("page_view");
@@ -48,11 +63,14 @@ describe("Consent-gated analytics", () => {
       JSON.stringify({
         analytics: true,
         advertising: false,
-        version: "2026-10-21",
+        version: "2026-10-21.2",
         at: Date.now(),
       }),
     );
-    await initializeAnalytics({ enabled: true, consentVersion: "2026-10-21" });
+    await initializeAnalytics({
+      enabled: true,
+      consentVersion: "2026-10-21.2",
+    });
     trackPage();
     trackPage();
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -71,11 +89,14 @@ describe("Consent-gated analytics", () => {
       JSON.stringify({
         analytics: true,
         advertising: false,
-        version: "2026-10-21",
+        version: "2026-10-21.2",
         at: Date.now(),
       }),
     );
-    await initializeAnalytics({ enabled: true, consentVersion: "2026-10-21" });
+    await initializeAnalytics({
+      enabled: true,
+      consentVersion: "2026-10-21.2",
+    });
     await setConsent(false, false);
     const before = vi.mocked(fetch).mock.calls.length;
     await trackEvent("add_to_cart", { value: 100 });
@@ -97,7 +118,7 @@ describe("Consent-gated analytics", () => {
       JSON.stringify({
         analytics: true,
         advertising: true,
-        version: "2026-10-21",
+        version: "2026-10-21.2",
         at: Date.now(),
       }),
     );

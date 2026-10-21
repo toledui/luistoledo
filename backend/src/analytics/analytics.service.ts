@@ -36,7 +36,7 @@ export class AnalyticsService {
       gtmId: s.gtmId,
       gaMeasurementId: s.gaMeasurementId,
       metaPixelId: s.metaPixelId,
-      consentVersion: '2026-10-21',
+      consentVersion: '2026-10-21.2',
     };
   }
   async adminSettings() {

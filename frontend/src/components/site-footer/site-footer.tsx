@@ -47,7 +47,9 @@ export function SiteFooter() {
       <div className="container footer-bottom">
         <span>© 2026 Luis Toledo · THagencia. Todos los derechos reservados.</span>
         <div>
-          <Link href="/privacidad">Privacidad</Link>
+          <Link href="/aviso-de-privacidad">Aviso de privacidad</Link>
+          <Link href="/politica-de-cookies">Política de cookies</Link>
+          <Link href="/politica-de-cookies#preferencias">Preferencias de cookies</Link>
           <Link href="/terminos">Términos</Link>
         </div>
       </div>

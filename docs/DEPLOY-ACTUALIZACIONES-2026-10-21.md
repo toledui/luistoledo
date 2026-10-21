@@ -4,6 +4,8 @@ Este manual reúne las actualizaciones locales todavía no desplegadas: Google/M
 
 También incluye el nuevo enlace **Eventos** del menú público y la página `/eventos`, con la masterclass gratuita y acceso a su inscripción existente en `/masterclass`. Este cambio solo requiere compilar y reiniciar el frontend; no agrega migraciones ni necesita seed.
 
+Se agregaron el aviso integral en `/aviso-de-privacidad` y la política de cookies en `/politica-de-cookies`, con el responsable y domicilio proporcionados. `/privacidad` redirige permanentemente al nuevo aviso. El botón flotante se retiró; las preferencias están disponibles en la página de cookies y en los enlaces del pie de página. La versión de consentimiento pasa a `2026-10-21.2`: las visitas con una elección anterior volverán a ver el selector, con ambas categorías opcionales desmarcadas. Compila y reinicia frontend y backend para mantener consistente la versión; estos cambios no requieren otra migración ni seed.
+
 **No necesitas ejecutar el seed para esta actualización.** Las migraciones de analítica y blog agregan sus permisos al rol `SUPER_ADMIN`; Sendcorex usa el permiso existente `settings.manage`. El deploy normal aplica migraciones y compila: no borra usuarios, cursos, pedidos, inscripciones ni configuración. Haz un respaldo verificado antes de cualquier cambio de esquema.
 
 Los archivos están en el proyecto local. No se han subido automáticamente al repositorio ni se ha actualizado producción. Publica todos los cambios, incluidos archivos nuevos y las cinco carpetas de migración del 21 de octubre, antes de usar `git pull` en el servidor.

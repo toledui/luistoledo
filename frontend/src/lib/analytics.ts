@@ -1,3 +1,4 @@
+import { privacy } from "./privacy";
 export type Consent = {
   analytics: boolean;
   advertising: boolean;
@@ -77,7 +78,7 @@ export function readConsent(): Consent | null {
     return c &&
       typeof c.analytics === "boolean" &&
       typeof c.advertising === "boolean" &&
-      c.version === "2026-10-21" &&
+      c.version === privacy.consentVersion &&
       Date.now() - c.at < 180 * 86400000
       ? c
       : null;
@@ -343,7 +344,7 @@ export async function setConsent(analytics: boolean, advertising: boolean) {
   const c: Consent = {
     analytics,
     advertising,
-    version: "2026-10-21",
+    version: privacy.consentVersion,
     at: Date.now(),
   };
   // Revoke every session for this visitor on this browser, including other open tabs.

@@ -14,6 +14,13 @@ describe("Automatically refreshed sitemap", () => {
         { path: "/blog/nuevo-articulo", updatedAt: "2026-10-21T12:00:00Z" },
       ]);
     const before = await sitemap();
+    expect(
+      before.some((item) => item.url.endsWith("/aviso-de-privacidad")),
+    ).toBe(true);
+    expect(
+      before.some((item) => item.url.endsWith("/politica-de-cookies")),
+    ).toBe(true);
+    expect(before.some((item) => item.url.endsWith("/privacidad"))).toBe(false);
     const after = await sitemap();
     expect(before.some((item) => item.url.includes("nuevo-articulo"))).toBe(
       false,

@@ -358,7 +358,7 @@ async function run() {
                 JSON.stringify({
                   analytics: false,
                   advertising: false,
-                  version: '2026-10-21',
+                  version: '2026-10-21.2',
                   at: Date.now(),
                 }),
               );

@@ -1,0 +1,30 @@
+.table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.table table {
+  width: 100%;
+  min-width: 540px;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+  line-height: 1.7;
+}
+.table caption {
+  text-align: left;
+  font-weight: 700;
+  padding: 12px 0;
+}
+.table th,
+.table td {
+  border: 1px solid #dce4ed;
+  padding: 12px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.table thead {
+  background: #edf7fa;
+}
+.table tbody th {
+  font-weight: 600;
+}

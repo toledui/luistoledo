@@ -12,7 +12,16 @@ const apiUrl =
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 const nextConfig: NextConfig = {
-  distDir: process.env.NEXT_DIST_DIR ?? '.next',
+  async redirects() {
+    return [
+      {
+        source: "/privacidad",
+        destination: "/aviso-de-privacidad",
+        permanent: true,
+      },
+    ];
+  },
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   images: {
     remotePatterns: [uploadsPattern(apiUrl), uploadsPattern(appUrl)],
     qualities: [75, 85, 90, 100],

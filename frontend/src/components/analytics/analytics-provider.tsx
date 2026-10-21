@@ -15,7 +15,7 @@ export function AnalyticsProvider() {
   const pathname = usePathname();
   const [config, setConfig] = useState<AnalyticsConfig | null>(null);
   const [open, setOpen] = useState(false);
-  const [analytics, setAnalytics] = useState(true);
+  const [analytics, setAnalytics] = useState(false);
   const [advertising, setAdvertising] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -34,20 +34,25 @@ export function AnalyticsProvider() {
       .catch(() => undefined);
     const preferences = () => {
       const c = readConsent();
-      setAnalytics(c?.analytics ?? true);
+      setAnalytics(c?.analytics ?? false);
       setAdvertising(c?.advertising ?? false);
       setOpen(true);
     };
     const ready = () => trackPage();
+    const consentChanged = () => {
+      setOpen(false);
+    };
     const sync = (event: StorageEvent) => {
       if (event.key === "lta_consent_v1") location.reload();
     };
     window.addEventListener("lta:preferences", preferences);
+    window.addEventListener("lta:consent", consentChanged);
     window.addEventListener("lta:analytics-ready", ready);
     window.addEventListener("storage", sync);
     return () => {
       active = false;
       window.removeEventListener("lta:preferences", preferences);
+      window.removeEventListener("lta:consent", consentChanged);
       window.removeEventListener("lta:analytics-ready", ready);
       window.removeEventListener("storage", sync);
     };
@@ -110,17 +115,6 @@ export function AnalyticsProvider() {
   if (!config?.enabled || pathname.startsWith("/admin")) return null;
   return (
     <>
-      <button
-        className={styles.preferences}
-        onClick={() => {
-          const c = readConsent();
-          setAnalytics(c?.analytics ?? true);
-          setAdvertising(c?.advertising ?? false);
-          setOpen(true);
-        }}
-      >
-        Privacidad y cookies
-      </button>
       {open && (
         <section
           className={styles.banner}
@@ -135,7 +129,8 @@ export function AnalyticsProvider() {
               medimos visitas, procedencia y actividad; las publicitarias
               comparten eventos con Meta y Google para medir campañas. Puedes
               cambiar tu elección en cualquier momento.{" "}
-              <a href="/privacidad">Aviso de privacidad</a>
+              <a href="/aviso-de-privacidad">Aviso de privacidad</a> ·{" "}
+              <a href="/politica-de-cookies">Política de cookies</a>
             </p>
             <div className={styles.options}>
               <label>

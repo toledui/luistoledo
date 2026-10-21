@@ -1,11 +1,13 @@
 import { Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import styles from "./legal-page.module.css";
+import type { ReactNode } from "react";
 
 export type LegalSection = {
   title: string;
   paragraphs?: string[];
   items?: string[];
+  content?: ReactNode;
 };
 
 export function LegalPage({
@@ -13,11 +15,13 @@ export function LegalPage({
   title,
   summary,
   sections,
+  updatedAt = "13 de julio de 2026",
 }: {
   eyebrow: string;
   title: string;
   summary: string;
   sections: LegalSection[];
+  updatedAt?: string;
 }) {
   return (
     <main className={styles.page}>
@@ -28,7 +32,7 @@ export function LegalPage({
         </span>
         <h1>{title}</h1>
         <p>{summary}</p>
-        <small>Última actualización: 13 de julio de 2026</small>
+        <small>Última actualización: {updatedAt}</small>
       </header>
       <div className={styles.layout}>
         <aside>
@@ -62,6 +66,7 @@ export function LegalPage({
                     ))}
                   </ul>
                 )}
+                {section.content}
               </div>
             </section>
           ))}
