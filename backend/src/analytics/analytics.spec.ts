@@ -39,6 +39,7 @@ describe('Analytics privacy and authoritative conversions', () => {
       update: jest.fn(),
     },
     order: { findFirst: jest.fn() },
+    $transaction: jest.fn(),
   };
   const order = {
     id: 'paid-order',
@@ -61,6 +62,10 @@ describe('Analytics privacy and authoritative conversions', () => {
       metaApiVersion: 'v25.0',
     });
     prisma.analyticsSession.findUnique.mockResolvedValue(session);
+    prisma.analyticsSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$transaction.mockImplementation(
+      (callback: (tx: typeof prisma) => unknown) => callback(prisma),
+    );
     prisma.analyticsEvent.findUniqueOrThrow.mockResolvedValue({
       name: 'purchase',
     });
@@ -79,6 +84,68 @@ describe('Analytics privacy and authoritative conversions', () => {
       path: '/checkout',
     });
     expect((await validate(dto)).some((e) => e.property === 'name')).toBe(true);
+  });
+  const browserEvent: AnalyticsEventDto = {
+    sessionId: session.id,
+    eventId: '6b1d9800-a67d-4a54-bc46-b19cc0382467',
+    name: 'begin_checkout',
+    path: '/checkout',
+  };
+  const deadlock = () =>
+    new Prisma.PrismaClientKnownRequestError('Write conflict', {
+      code: 'P2034',
+      clientVersion: '7.8.0',
+    });
+  it('locks the session before inserting an event to avoid concurrent FK lock upgrades', async () => {
+    await expect(service.collect(browserEvent)).resolves.toEqual({
+      accepted: true,
+    });
+    expect(
+      prisma.analyticsSession.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.analyticsEvent.upsert.mock.invocationCallOrder[0]);
+    expect(prisma.analyticsSession.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: session.id,
+          analyticsConsent: true,
+        }) as unknown,
+      }),
+    );
+  });
+  it('retries the entire analytics transaction after a deadlock using the same event ID', async () => {
+    prisma.analyticsEvent.upsert.mockRejectedValueOnce(deadlock());
+    await expect(service.collect(browserEvent)).resolves.toEqual({
+      accepted: true,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(
+      prisma.analyticsEvent.upsert.mock.calls.map(
+        ([arg]) => (arg as { where: { id: string } }).where.id,
+      ),
+    ).toEqual([browserEvent.eventId, browserEvent.eventId]);
+  });
+  it('bounds deadlock retries and declines the optional event without a server error', async () => {
+    prisma.analyticsEvent.upsert.mockRejectedValue(deadlock());
+    await expect(service.collect(browserEvent)).resolves.toEqual({
+      accepted: false,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+  });
+  it('does not retry unrelated database failures', async () => {
+    prisma.analyticsEvent.upsert.mockRejectedValue(
+      new Error('Database unavailable'),
+    );
+    await expect(service.collect(browserEvent)).rejects.toThrow(
+      'Database unavailable',
+    );
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+  it('does not insert events if consent was revoked while waiting for the lock', async () => {
+    prisma.analyticsSession.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.collect(browserEvent)).resolves.toEqual({
+      accepted: false,
+    });
+    expect(prisma.analyticsEvent.upsert).not.toHaveBeenCalled();
   });
   it('removes sensitive URL fields and avoids spoofed referral domains', () => {
     expect(cleanPath('/checkout/exito?session_id=SECRET#token')).toBe(

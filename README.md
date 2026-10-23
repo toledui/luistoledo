@@ -8,6 +8,7 @@ Sistema LMS y de comercio electrónico para cursos en línea.
 - [Manual de despliegue sin Docker](./DEPLOY.md)
 - [Deploy acumulado del 21 de octubre: analítica, blog, Sendcorex y CSV](./docs/DEPLOY-ACTUALIZACIONES-2026-10-21.md)
 - [Manual de API y Swagger](./API.md)
+- [Moneda local con el checkout original de Stripe](./docs/STRIPE-MONEDAS.md)
 - [Analítica: Google, Meta y panel administrativo](./docs/ANALITICA.md)
 - [Blog, constructor y sitemap automático](./docs/BLOG.md)
 - [Sendcorex: inscripciones y newsletter](./docs/SENDCOREX.md)

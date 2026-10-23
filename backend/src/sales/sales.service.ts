@@ -23,6 +23,7 @@ import { CreateCouponDto, UpdatePaymentSettingsDto } from './dto/sales.dto';
 import { ListOrdersDto } from './dto/list-orders.dto';
 import { PaidCourseService } from '../paid-course/paid-course.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { CurrenciesService } from './currencies.service';
 
 @Injectable()
 export class SalesService {
@@ -34,6 +35,7 @@ export class SalesService {
     private readonly paidCourse: PaidCourseService,
     @Optional() private readonly analytics?: AnalyticsService,
     @Optional() private readonly sendcorex?: SendcorexService,
+    @Optional() private readonly currencies?: CurrenciesService,
   ) {}
 
   private orderInclude() {
@@ -152,18 +154,19 @@ export class SalesService {
   }
 
   async updatePaymentSettings(dto: UpdatePaymentSettingsDto) {
+    this.currencies?.reset();
     const current = await this.paymentSettingsRecord();
     const updated = await this.prisma.paymentProviderSetting.update({
       where: { id: 1 },
       data: {
         stripeEnabled: dto.stripeEnabled,
         stripeMode: dto.stripeMode,
-        stripePublishableKey: dto.stripePublishableKey || null,
-        stripeSecretKeyEncrypted: dto.stripeSecretKey
-          ? this.encryption.encrypt(dto.stripeSecretKey)
+        stripePublishableKey: dto.stripePublishableKey?.trim() || null,
+        stripeSecretKeyEncrypted: dto.stripeSecretKey?.trim()
+          ? this.encryption.encrypt(dto.stripeSecretKey.trim())
           : current.stripeSecretKeyEncrypted,
-        stripeWebhookSecretEncrypted: dto.stripeWebhookSecret
-          ? this.encryption.encrypt(dto.stripeWebhookSecret)
+        stripeWebhookSecretEncrypted: dto.stripeWebhookSecret?.trim()
+          ? this.encryption.encrypt(dto.stripeWebhookSecret.trim())
           : current.stripeWebhookSecretEncrypted,
         bankTransferEnabled: dto.bankTransferEnabled,
         bankName: dto.bankName || null,
@@ -185,10 +188,16 @@ export class SalesService {
     const settings = await this.paymentSettingsRecord();
     if (!settings.stripeEnabled || !settings.stripeSecretKeyEncrypted)
       throw new BadRequestException('Stripe no está configurado');
+    const key = this.encryption
+      .decrypt(settings.stripeSecretKeyEncrypted)
+      .trim();
+    const mode = settings.stripeMode === 'LIVE' ? 'live' : 'test';
+    if (!key.startsWith(`sk_${mode}_`) && !key.startsWith(`rk_${mode}_`))
+      throw new BadRequestException(
+        'La clave secreta no corresponde al modo configurado de Stripe',
+      );
     return {
-      client: new Stripe(
-        this.encryption.decrypt(settings.stripeSecretKeyEncrypted),
-      ),
+      client: new Stripe(key, { timeout: 5000, maxNetworkRetries: 0 }),
       settings,
     };
   }
@@ -203,56 +212,206 @@ export class SalesService {
     },
     cancelPath: string,
     stripeClient?: Stripe,
+    currencyQuote?: string,
   ) {
     const client = stripeClient ?? (await this.stripeClient()).client;
     const frontendUrl = this.config.get<string>(
       'FRONTEND_URL',
       'http://localhost:3000',
     );
-    const pending = await this.prisma.payment.findFirst({
-      where: {
-        orderId: order.id,
-        provider: 'STRIPE',
-        status: PaymentStatus.PENDING,
-      },
-      select: { externalId: true },
-    });
-    const session = await client.checkout.sessions.create(
-      {
-        mode: 'payment',
-        client_reference_id: order.id,
-        metadata: { orderId: order.id, userId: order.userId },
-        line_items: [
+    const quoted = currencyQuote
+      ? this.currencies?.verify(currencyQuote, order.total)
+      : undefined;
+    if (currencyQuote && !quoted)
+      throw new BadRequestException('No fue posible validar la cotización.');
+    // Serialize session replacement for this order, including competing currency changes.
+    // The payment URL is returned only after the expected charge has been committed.
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { updatedAt: new Date() },
+        });
+        const current = await tx.order.findUniqueOrThrow({
+          where: { id: order.id },
+          include: { payments: true },
+        });
+        if (
+          current.userId !== order.userId ||
+          ![OrderStatus.PENDING, OrderStatus.FAILED].includes(
+            current.status as 'PENDING' | 'FAILED',
+          )
+        )
+          throw new BadRequestException(
+            'Este pedido no admite iniciar otro pago.',
+          );
+        const pending = current.payments.find(
+          (p) => p.provider === 'STRIPE' && p.status === PaymentStatus.PENDING,
+        );
+        if (!current.total.equals(order.total))
+          throw new BadRequestException(
+            'El importe del pedido cambió. Revisa tu cotización.',
+          );
+        if (!pending)
+          throw new BadRequestException('El pago pendiente no existe.');
+        const currency =
+          quoted?.currency ?? pending.checkoutCurrency ?? order.currency;
+        const amount =
+          quoted?.amount ??
+          (pending.checkoutAmount != null
+            ? Number(pending.checkoutAmount)
+            : Math.round(Number(order.total) * 100));
+        if (pending.externalId) {
+          const previous = await client.checkout.sessions.retrieve(
+            pending.externalId,
+          );
+          this.assertStripeSession(
+            { ...order, payments: current.payments },
+            previous,
+          );
+          if (previous.status === 'complete') {
+            if (previous.payment_status === 'paid')
+              return `${frontendUrl}/checkout/exito?order=${order.id}&session_id=${previous.id}`;
+            throw new BadRequestException(
+              'Stripe está procesando el pago. Espera su confirmación.',
+            );
+          }
+          if (previous.status === 'open') {
+            if (
+              previous.url &&
+              previous.currency?.toUpperCase() === currency &&
+              previous.amount_total === amount &&
+              (!quoted || previous.adaptive_pricing?.enabled === false)
+            )
+              return previous.url;
+            const expired = await client.checkout.sessions.expire(previous.id);
+            if (expired.status !== 'expired')
+              throw new BadRequestException(
+                'No fue posible cerrar el pago anterior.',
+              );
+          }
+        }
+        const session = await client.checkout.sessions.create(
           {
-            quantity: 1,
-            price_data: {
-              currency: order.currency.toLowerCase(),
-              unit_amount: Math.round(Number(order.total) * 100),
-              product_data: {
-                name:
-                  order.items.length === 1
-                    ? order.items[0].title
-                    : `${order.items.length} cursos · Luis Toledo Academy`,
+            mode: 'payment',
+            adaptive_pricing: { enabled: !quoted && !pending.checkoutCurrency },
+            client_reference_id: order.id,
+            metadata: { orderId: order.id, userId: order.userId },
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: currency.toLowerCase(),
+                  unit_amount: amount,
+                  product_data: {
+                    name:
+                      order.items.length === 1
+                        ? order.items[0].title
+                        : `${order.items.length} cursos · Luis Toledo Academy`,
+                  },
+                },
               },
-            },
+            ],
+            success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${frontendUrl}${cancelPath}`,
+            ...(quoted
+              ? {
+                  custom_text: {
+                    submit: {
+                      message: `Cobro en ${currency}. Para elegir otra moneda, usa Volver y cámbiala en el sitio antes de pagar.`,
+                    },
+                  },
+                }
+              : {}),
           },
-        ],
-        success_url: `${frontendUrl}/checkout/exito?order=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${frontendUrl}${cancelPath}`,
+          {
+            idempotencyKey: `lta-${order.id}-${pending.externalId ?? 'initial'}-${currency}-${amount}`,
+            timeout: 5000,
+            maxNetworkRetries: 0,
+          },
+        );
+        if (!session.url)
+          throw new BadRequestException('Stripe no devolvió una URL de pago');
+        const bound = await tx.payment.updateMany({
+          where: {
+            orderId: order.id,
+            provider: 'STRIPE',
+            status: PaymentStatus.PENDING,
+          },
+          data: {
+            externalId: session.id,
+            checkoutCurrency: currency,
+            checkoutAmount: amount,
+            checkoutRate: quoted?.rate ?? pending.checkoutRate ?? 1,
+            checkoutRateAt: quoted
+              ? new Date(quoted.at)
+              : (pending.checkoutRateAt ?? new Date()),
+          },
+        });
+        if (!bound.count)
+          throw new BadRequestException(
+            'No fue posible vincular el pago a este pedido.',
+          );
+        return session.url;
       },
-      { idempotencyKey: `lta-${order.id}-${pending?.externalId ?? 'initial'}` },
+      { timeout: 25000, maxWait: 5000 },
     );
-    if (!session.url)
-      throw new BadRequestException('Stripe no devolvió una URL de pago');
-    await this.prisma.payment.updateMany({
-      where: {
-        orderId: order.id,
-        provider: 'STRIPE',
-        status: PaymentStatus.PENDING,
-      },
-      data: { externalId: session.id },
-    });
-    return session.url;
+  }
+
+  async currencyOptions(ip?: string) {
+    try {
+      if (!this.currencies) throw new Error();
+      const { client } = await this.stripeClient();
+      return await this.currencies.options(client, ip);
+    } catch {
+      return {
+        currencies: ['MXN'],
+        defaultCurrency: 'MXN',
+        country: null,
+        rateUpdatedAt: null,
+        unavailable: true,
+      };
+    }
+  }
+  async currencyQuote(amountMxn: number, currency: string) {
+    if (!this.currencies)
+      throw new BadRequestException('La conversión no está disponible.');
+    const client =
+      currency === 'MXN' ? undefined : (await this.stripeClient()).client;
+    return this.currencies.quote(amountMxn, currency, client);
+  }
+
+  private assertStripeSession(
+    order: {
+      id: string;
+      userId: string;
+      currency: string;
+      total: Prisma.Decimal;
+      payments?: {
+        externalId: string | null;
+        checkoutCurrency?: string | null;
+        checkoutAmount?: Prisma.Decimal | null;
+      }[];
+    },
+    session: Stripe.Checkout.Session,
+  ) {
+    // Adaptive Pricing retains integration amounts in these fields. Local amounts are in presentment_details.
+    const payment = order.payments?.find((p) => p.externalId === session.id);
+    const expectedCurrency = payment?.checkoutCurrency ?? order.currency;
+    const expectedAmount =
+      payment?.checkoutAmount != null
+        ? Number(payment.checkoutAmount)
+        : Math.round(Number(order.total) * 100);
+    if (
+      session.metadata?.orderId !== order.id ||
+      session.metadata?.userId !== order.userId ||
+      session.client_reference_id !== order.id ||
+      session.currency?.toUpperCase() !== expectedCurrency.toUpperCase() ||
+      session.amount_total !== expectedAmount
+    )
+      throw new BadRequestException(
+        'Los datos del pago de Stripe no coinciden',
+      );
   }
 
   private cartRecord(userId: string) {
@@ -411,6 +570,7 @@ export class SalesService {
     program?: 'asistente-ia',
     paymentOption?: 'FULL' | 'INSTALLMENTS',
     analyticsSessionId?: string,
+    currencyQuote?: string,
   ) {
     const analyticsSession =
       await this.analytics?.sessionFromHeader(analyticsSessionId);
@@ -448,7 +608,7 @@ export class SalesService {
         });
       }
       if (paymentMethod === 'BANK_TRANSFER') return { order, paymentMethod };
-      const resumed = await this.resumePayment(userId, order.id);
+      const resumed = await this.resumePayment(userId, order.id, currencyQuote);
       return { order, paymentMethod, checkoutUrl: resumed.checkoutUrl };
     }
     if (paymentOption)
@@ -531,17 +691,17 @@ export class SalesService {
       const checkoutUrl = await this.createStripeCheckoutSession(
         order,
         `/mi-aprendizaje/pedidos?cancelled=1&order=${order.id}`,
+        undefined,
+        currencyQuote,
       );
       return { order, paymentMethod, checkoutUrl };
-    } catch (error) {
-      await this.prisma.order.update({
-        where: { id: order.id },
+    } catch {
+      await this.prisma.order.updateMany({
+        where: { id: order.id, status: OrderStatus.PENDING },
         data: { status: OrderStatus.FAILED },
       });
       throw new BadRequestException(
-        error instanceof Error
-          ? `Stripe no pudo iniciar el pago: ${error.message}`
-          : 'Stripe no pudo iniciar el pago',
+        'No fue posible iniciar el pago. Puedes reintentarlo desde tus pedidos.',
       );
     }
   }
@@ -551,6 +711,7 @@ export class SalesService {
     paymentId: string,
     provider: 'STRIPE' | 'BANK_TRANSFER',
     externalId: string,
+    presentment?: Stripe.Checkout.Session.PresentmentDetails | null,
   ) {
     const order = await this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
@@ -596,6 +757,13 @@ export class SalesService {
           status: PaymentStatus.SUCCEEDED,
           processedAt: new Date(),
           externalId,
+          ...(presentment
+            ? {
+                presentmentAmount: presentment.presentment_amount,
+                presentmentCurrency:
+                  presentment.presentment_currency.toUpperCase(),
+              }
+            : {}),
         },
       });
       if (!payment.count)
@@ -711,12 +879,18 @@ export class SalesService {
       throw new BadRequestException(
         'El pago todavía no ha sido completado en Stripe',
       );
-    if (session.currency?.toUpperCase() !== order.currency.toUpperCase())
-      throw new BadRequestException('La moneda de Stripe no coincide');
-    if (session.amount_total !== Math.round(Number(order.total) * 100))
-      throw new BadRequestException('El importe de Stripe no coincide');
+    this.assertStripeSession(order, session);
 
-    return this.completePayment(order.id, payment.id, 'STRIPE', session.id);
+    return this.completePayment(
+      order.id,
+      payment.id,
+      'STRIPE',
+      session.id,
+      session.presentment_details ?? {
+        presentment_amount: session.amount_total!,
+        presentment_currency: session.currency!,
+      },
+    );
   }
 
   async processStripeWebhook(signature: string | undefined, rawBody: Buffer) {
@@ -734,6 +908,10 @@ export class SalesService {
     } catch {
       throw new BadRequestException('Firma de webhook inválida');
     }
+    if (event.livemode !== (settings.stripeMode === 'LIVE'))
+      throw new BadRequestException(
+        'El modo del webhook de Stripe no coincide',
+      );
     const existing = await this.prisma.paymentEvent.findUnique({
       where: { externalEventId: event.id },
     });
@@ -763,14 +941,7 @@ export class SalesService {
         include: { payments: true },
       });
       if (!order) throw new NotFoundException('Pedido de Stripe no encontrado');
-      if (
-        session.amount_total !== Math.round(Number(order.total) * 100) ||
-        session.currency?.toUpperCase() !== order.currency ||
-        session.metadata?.userId !== order.userId
-      )
-        throw new BadRequestException(
-          'Los datos del pago de Stripe no coinciden',
-        );
+      this.assertStripeSession(order, session);
       const payment = order.payments.find(
         (item) => item.provider === 'STRIPE' && item.externalId === session.id,
       );
@@ -778,7 +949,16 @@ export class SalesService {
         throw new BadRequestException(
           'La sesión de Stripe no corresponde al pedido',
         );
-      await this.completePayment(order.id, payment.id, 'STRIPE', session.id);
+      await this.completePayment(
+        order.id,
+        payment.id,
+        'STRIPE',
+        session.id,
+        session.presentment_details ?? {
+          presentment_amount: session.amount_total!,
+          presentment_currency: session.currency!,
+        },
+      );
     }
     await this.prisma.paymentEvent.update({
       where: { externalEventId: event.id },
@@ -798,7 +978,7 @@ export class SalesService {
       },
     });
   }
-  async resumePayment(userId: string, orderId: string) {
+  async resumePayment(userId: string, orderId: string, currencyQuote?: string) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
       include: { items: true, payments: true },
@@ -823,8 +1003,8 @@ export class SalesService {
 
     const { client } = await this.stripeClient();
     if (order.status === OrderStatus.FAILED)
-      await this.prisma.order.update({
-        where: { id: order.id },
+      await this.prisma.order.updateMany({
+        where: { id: order.id, status: OrderStatus.FAILED },
         data: { status: OrderStatus.PENDING },
       });
     if (payment.externalId) {
@@ -858,8 +1038,13 @@ export class SalesService {
             encodeURIComponent(previous.id),
         };
       }
-      if (previous?.status === 'open' && previous.url)
-        return { orderId: order.id, checkoutUrl: previous.url };
+      if (previous?.status === 'open' && !currencyQuote) {
+        this.assertStripeSession(order, previous);
+        if (previous.url)
+          return { orderId: order.id, checkoutUrl: previous.url };
+        if (previous.ui_mode !== 'elements')
+          throw new BadRequestException('El pago pendiente no está disponible');
+      }
       if (previous?.status === 'complete')
         throw new BadRequestException(
           'Stripe aún está procesando este pago. Espera su confirmación.',
@@ -869,6 +1054,7 @@ export class SalesService {
       order,
       `/mi-aprendizaje/pedidos?cancelled=1&order=${order.id}`,
       client,
+      currencyQuote,
     );
     return { orderId: order.id, checkoutUrl };
   }

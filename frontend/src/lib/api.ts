@@ -19,6 +19,7 @@ async function request(path: string, init?: RequestInit) {
     !["GET", "HEAD"].includes(init.method) &&
     !path.startsWith("/admin") &&
     !path.startsWith("/analytics")
+    && path !== "/payments/currency-quote"
   ) {
     const tracking = await analyticsHeaders().catch(() => ({}));
     for (const [key, value] of Object.entries(tracking))

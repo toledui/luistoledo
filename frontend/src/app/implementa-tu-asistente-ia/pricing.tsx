@@ -1,11 +1,11 @@
 "use client";
+import { CurrencyPrice } from "@/components/currency/currency-context";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, LockKeyhole } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { ProductView } from "@/components/analytics/product-view";
 import {
-  formatMxn,
   paidCourseClose,
   type PaidCourseOffer,
 } from "@/lib/paid-course";
@@ -51,11 +51,11 @@ export function Pricing() {
           <span>Pago de contado</span>
           <h3>Todo listo. Un solo pago.</h3>
           <p className={styles.regular}>
-            Precio regular <s>{formatMxn(offer.regularPrice)}</s>
+            Precio regular <s><CurrencyPrice amount={offer.regularPrice} /></s>
           </p>
-          <p className={styles.amount}>{formatMxn(offer.cashPrice)}</p>
+          <p className={styles.amount}><CurrencyPrice amount={offer.cashPrice} /></p>
           <p>
-            Ahorras {formatMxn(offer.regularPrice - offer.cashPrice)} sobre el
+            Ahorras <CurrencyPrice amount={offer.regularPrice - offer.cashPrice} /> sobre el
             precio regular.
           </p>
           <ul>
@@ -91,15 +91,15 @@ export function Pricing() {
           <span>Plan en parcialidades</span>
           <h3>Aparta hoy. Implementa con nosotros.</h3>
           <p className={styles.regular}>Tu lugar comienza con</p>
-          <p className={styles.amount}>{formatMxn(offer.deposit)}</p>
+          <p className={styles.amount}><CurrencyPrice amount={offer.deposit} /></p>
           <p>
-            + 2 pagos de {formatMxn(offer.installmentAmount)}. Total:{" "}
-            <strong>{formatMxn(offer.installmentTotal)}</strong>.
+            + 2 pagos de <CurrencyPrice amount={offer.installmentAmount} />. Total:{" "}
+            <strong><CurrencyPrice amount={offer.installmentTotal} /></strong>.
           </p>
           <ol className={styles.schedule}>
             <li>
               <span>01 · Hoy</span>
-              <strong>{formatMxn(offer.deposit)}</strong>
+              <strong><CurrencyPrice amount={offer.deposit} /></strong>
             </li>
             {offer.installmentDueDates.map((date, index) => (
               <li key={date}>
@@ -111,7 +111,7 @@ export function Pricing() {
                     timeZone: offer.timezone,
                   })}
                 </span>
-                <strong>{formatMxn(offer.installmentAmount)}</strong>
+                <strong><CurrencyPrice amount={offer.installmentAmount} /></strong>
               </li>
             ))}
           </ol>

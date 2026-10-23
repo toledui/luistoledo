@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyPrice } from "@/components/currency/currency-context";
 import { apiFetch } from "@/lib/api";
 import { ProductView } from "@/components/analytics/product-view";
 import {
@@ -236,7 +237,7 @@ export function CoursePublicView({
               <strong>
                 {Number(course.salePrice || course.price) === 0
                   ? "Acceso gratuito"
-                  : `$${Number(course.salePrice || course.price).toLocaleString("es-MX")} MXN`}
+                  : <CurrencyPrice amount={course.salePrice || course.price} />}
               </strong>
               {Number(course.salePrice || course.price) === 0 ? (
                 <button onClick={() => void enroll()} disabled={enrolling}>

@@ -19,6 +19,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "../commerce.module.css";
 import { formatMxn, type PaidCourseOffer } from "@/lib/paid-course";
+import {
+  CurrencySelector,
+  CurrencyAttribution,
+  CurrencyPrice,
+  useCurrencyQuote,
+  useCurrency,
+} from "@/components/currency/currency-context";
 type Methods = { stripeEnabled: boolean; bankTransferEnabled: boolean };
 type User = { email: string; firstName: string; lastName: string };
 type Result = { order: { id: string }; checkoutUrl?: string };
@@ -30,6 +37,7 @@ export function CheckoutView({
   plan?: "FULL" | "INSTALLMENTS";
 }) {
   const cart = useCart();
+  const currencyContext = useCurrency();
   const router = useRouter();
   const [methods, setMethods] = useState<Methods | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -64,6 +72,19 @@ export function CheckoutView({
       ? offer.cashPrice
       : offer.deposit
     : 0;
+  const baseTotal = Number(
+    program ? amountNow : (couponSummary?.total ?? cart.total),
+  );
+  const converted = useCurrencyQuote(
+    baseTotal,
+    paymentMethod === "BANK_TRANSFER" ? "MXN" : undefined,
+  );
+  const price = (amount: number | string) =>
+    paymentMethod === "BANK_TRANSFER" ? (
+      formatMxn(Number(amount))
+    ) : (
+      <CurrencyPrice amount={amount} />
+    );
   useEffect(() => {
     if (program)
       void apiFetch<PaidCourseOffer>("/paid-course")
@@ -192,10 +213,27 @@ export function CheckoutView({
   }
   async function pay() {
     if (!canPay) return;
+    if (
+      paymentMethod === "STRIPE" &&
+      converted.enabled &&
+      (!converted.quote || converted.quote.exp <= Date.now())
+    ) {
+      setError("Revisa la cotización de tu moneda antes de continuar.");
+      return;
+    }
     setPaying(true);
+    if (paymentMethod === "STRIPE") currencyContext?.lockCurrency(true);
     setError("");
     try {
       await authenticate();
+      if (
+        paymentMethod === "STRIPE" &&
+        converted.enabled &&
+        (!converted.quote || converted.quote.exp <= Date.now())
+      )
+        throw new Error(
+          "La cotización venció. Actualiza la página para revisar el total.",
+        );
       if (!program) {
         await apiFetch("/cart", { method: "DELETE" });
         for (const item of cart.items)
@@ -213,6 +251,9 @@ export function CheckoutView({
             ? { program: "asistente-ia", paymentOption }
             : { couponCode: appliedCoupon || undefined }),
           paymentMethod,
+          ...(paymentMethod === "STRIPE" && converted.enabled
+            ? { currencyQuote: converted.quote?.token }
+            : {}),
         }),
       });
       if (!program) cart.clear();
@@ -226,6 +267,7 @@ export function CheckoutView({
         e instanceof Error ? e.message : "No fue posible procesar el pedido",
       );
       setPaying(false);
+      currencyContext?.lockCurrency(false);
     }
   }
   if (!methods && !error)
@@ -346,6 +388,9 @@ export function CheckoutView({
               </div>
             )}
             <h2>Método de pago</h2>
+            {paymentMethod === "BANK_TRANSFER" && (
+              <p>Las transferencias bancarias se realizan en MXN.</p>
+            )}
             <div className={styles.paymentMethods}>
               {methods?.stripeEnabled && (
                 <label
@@ -474,6 +519,15 @@ export function CheckoutView({
               <ReceiptText />
               Tu pedido
             </h2>
+            {paymentMethod === "STRIPE" && (
+              <>
+                <CurrencySelector disabled={paying} />
+                <p>
+                  La moneda elegida se cobrará en Stripe. Para cambiarla allí,
+                  usa Volver y selecciónala aquí antes de pagar.
+                </p>
+              </>
+            )}
             {program ? (
               <div className={styles.programSummary}>
                 <h3>
@@ -501,19 +555,18 @@ export function CheckoutView({
                   <p>Cargando precios…</p>
                 ) : paymentOption === "FULL" ? (
                   <p>
-                    Un solo pago de{" "}
-                    <strong>{formatMxn(offer.cashPrice)}</strong>.
+                    Un solo pago de <strong>{price(offer.cashPrice)}</strong>.
                   </p>
                 ) : (
                   <>
                     <p>
-                      Hoy pagas <strong>{formatMxn(offer.deposit)}</strong>.
+                      Hoy pagas <strong>{price(offer.deposit)}</strong>.
                       Después, dos pagos de{" "}
-                      <strong>{formatMxn(offer.installmentAmount)}</strong>.
+                      <strong>{price(offer.installmentAmount)}</strong>.
                     </p>
                     <p>
                       Total del programa:{" "}
-                      <strong>{formatMxn(offer.installmentTotal)}</strong>
+                      <strong>{price(offer.installmentTotal)}</strong>
                     </p>
                     <p>
                       Vencimientos: 21 y 28 de noviembre de 2026, 9:00 a. m.
@@ -531,12 +584,7 @@ export function CheckoutView({
                 {cart.items.map((item) => (
                   <div className={styles.checkoutItem} key={item.id}>
                     <span>{item.title}</span>
-                    <strong>
-                      $
-                      {Number(item.salePrice || item.price).toLocaleString(
-                        "es-MX",
-                      )}
-                    </strong>
+                    <strong>{price(item.salePrice || item.price)}</strong>
                     <button onClick={() => removeItem(item.id)}>
                       <Trash2 />
                     </button>
@@ -546,10 +594,7 @@ export function CheckoutView({
                 {couponSummary && (
                   <p className={styles.discount}>
                     <span>Descuento · {appliedCoupon}</span>
-                    <strong>
-                      −${Number(couponSummary.discount).toLocaleString("es-MX")}{" "}
-                      MXN
-                    </strong>
+                    <strong>−{price(couponSummary.discount)}</strong>
                   </p>
                 )}
               </>
@@ -557,14 +602,43 @@ export function CheckoutView({
             <p className={styles.total}>
               <span>{program ? "A pagar hoy" : "Total"}</span>
               <strong>
-                $
-                {Number(
-                  program ? amountNow : (couponSummary?.total ?? cart.total),
-                ).toLocaleString("es-MX")}{" "}
-                MXN
+                {paymentMethod === "BANK_TRANSFER" ? (
+                  formatMxn(baseTotal)
+                ) : (
+                  <CurrencyPrice amount={baseTotal} />
+                )}
               </strong>
             </p>
-            <button onClick={() => void pay()} disabled={paying || !canPay}>
+            {paymentMethod === "STRIPE" && converted.enabled && (
+              <>
+                {converted.error && <p role="alert">{converted.error}</p>}
+                {converted.quote && (
+                  <small>
+                    Cotización válida hasta {new Date(converted.quote.exp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Precio base:{" "}
+                    {formatMxn(baseTotal)}.
+                  </small>
+                )}
+                <CurrencyAttribution />
+                {program &&
+                  paymentOption === "INSTALLMENTS" &&
+                  converted.currency !== "MXN" && (
+                    <small>
+                      Las parcialidades futuras se cotizan al pagarlas. El saldo
+                      del plan se conserva en MXN.
+                    </small>
+                  )}
+              </>
+            )}
+            <button
+              onClick={() => void pay()}
+              disabled={
+                paying ||
+                !canPay ||
+                (paymentMethod === "STRIPE" &&
+                  converted.enabled &&
+                  !converted.quote)
+              }
+            >
               {paying ? (
                 <LoaderCircle className={styles.spin} />
               ) : (

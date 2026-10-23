@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyPrice } from "@/components/currency/currency-context";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -334,7 +335,7 @@ function App() {
                     <strong className="course-price">
                       {price === 0
                         ? "Gratis"
-                        : `$${price.toLocaleString("es-MX")} MXN`}
+                        : <CurrencyPrice amount={price} />}
                     </strong>
 
                     <button

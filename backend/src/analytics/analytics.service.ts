@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, Interval } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { createHash, createSign } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../crypto/encryption.service';
 import {
@@ -250,37 +251,63 @@ export class AnalyticsService {
       Date.now() - session.lastSeenAt.getTime() > 35 * 60000
     )
       return { accepted: false };
-    await this.prisma.$transaction(async (tx) => {
-      await tx.analyticsEvent.upsert({
-        where: { id: dto.eventId },
-        update: {},
-        create: {
-          id: dto.eventId,
-          sessionId: session.id,
-          name: dto.name,
-          path: cleanPath(dto.path),
-          source: session.source,
-          origin: 'browser',
-          value: dto.value,
-          currency: dto.currency,
-          data: {
-            item_id: dto.itemId,
-            item_name: dto.itemName,
-            items: dto.items?.map((item) => ({
-              item_id: item.item_id,
-              item_name: item.item_name,
-              price: item.price,
-              quantity: item.quantity,
-            })),
-          },
-        },
-      });
-      await tx.analyticsSession.update({
-        where: { id: session.id },
-        data: { lastSeenAt: new Date() },
-      });
-    });
-    return { accepted: true };
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.prisma.$transaction(async (tx) => {
+          // Lock the parent before inserting events: concurrent event inserts otherwise
+          // take shared FK locks and can deadlock when both upgrade to update the session.
+          const active = await tx.analyticsSession.updateMany({
+            where: {
+              id: session.id,
+              analyticsConsent: true,
+              lastSeenAt: { gte: new Date(Date.now() - 35 * 60000) },
+            },
+            data: { lastSeenAt: new Date() },
+          });
+          if (!active.count) return { accepted: false };
+          await tx.analyticsEvent.upsert({
+            where: { id: dto.eventId },
+            update: {},
+            create: {
+              id: dto.eventId,
+              sessionId: session.id,
+              name: dto.name,
+              path: cleanPath(dto.path),
+              source: session.source,
+              origin: 'browser',
+              value: dto.value,
+              currency: dto.currency,
+              data: {
+                item_id: dto.itemId,
+                item_name: dto.itemName,
+                items: dto.items?.map((item) => ({
+                  item_id: item.item_id,
+                  item_name: item.item_name,
+                  price: item.price,
+                  quantity: item.quantity,
+                })),
+              },
+            },
+          });
+          return { accepted: true };
+        });
+      } catch (error) {
+        if (
+          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+          error.code !== 'P2034'
+        )
+          throw error;
+        if (attempt === 2) {
+          this.logger.warn(
+            'Evento de analítica no registrado después de tres conflictos de escritura.',
+          );
+          return { accepted: false };
+        }
+        // Retry the entire rolled-back transaction; the event ID makes replay idempotent.
+        await delay(20 * 2 ** attempt + Math.floor(Math.random() * 20));
+      }
+    }
+    return { accepted: false };
   }
   async sessionFromHeader(header?: string) {
     if (!header || !/^[a-zA-Z0-9.-]{16,64}$/.test(header)) return null;

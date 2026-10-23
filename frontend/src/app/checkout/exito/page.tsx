@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import styles from "../../commerce.module.css";
+import { formatChargedCurrency } from "@/components/currency/currency-context";
 type Order = {
   number: string;
   status: string;
@@ -17,6 +18,7 @@ type Order = {
   items: { title: string }[];
   paymentPlanId?: string | null;
   installmentNumber?: number | null;
+  payments?: { status: string; presentmentAmount?: string | null; presentmentCurrency?: string | null }[];
 };
 function Success() {
   const id = useSearchParams().get("order");
@@ -89,6 +91,7 @@ function Success() {
         Pedido <strong>{order.number}</strong> · $
         {Number(order.total).toLocaleString("es-MX")} MXN
       </p>
+      {order.payments?.filter((p) => p.status === 'SUCCEEDED' && p.presentmentAmount != null && p.presentmentCurrency).map((payment, index) => <p key={index}>Importe cobrado: <strong>{formatChargedCurrency(payment.presentmentAmount!, payment.presentmentCurrency!)}</strong></p>)}
       <div>
         {order.items.map((item) => (
           <strong key={item.title}>{item.title}</strong>

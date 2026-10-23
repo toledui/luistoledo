@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import styles from "./public-navbar.module.css";
+import { CurrencySelector } from "@/components/currency/currency-context";
 export function PublicNavbar() {
   const [open, setOpen] = useState(false);
   return (
@@ -28,6 +29,7 @@ export function PublicNavbar() {
           <Link href="/contacto" onClick={() => setOpen(false)}>Contacto</Link>
         </nav>
         <div className={styles.actions}>
+          <div className={styles.currency}><CurrencySelector /></div>
           <CartButton />
           <AccountMenu responsive />
         </div>

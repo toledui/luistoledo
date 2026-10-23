@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyPrice, CurrencySelector, CurrencyAttribution } from "@/components/currency/currency-context";
 import { apiFetch } from "@/lib/api";
 import {
   ArrowLeft,
@@ -98,11 +99,7 @@ export function CartView() {
                   <p>{item.course.shortDescription}</p>
                 </div>
                 <strong>
-                  $
-                  {Number(
-                    item.course.salePrice || item.course.price,
-                  ).toLocaleString("es-MX")}{" "}
-                  MXN
+                  <CurrencyPrice amount={item.course.salePrice || item.course.price} />
                 </strong>
                 <button onClick={() => void remove(item.id)}>
                   <Trash2 />
@@ -119,24 +116,26 @@ export function CartView() {
         </section>
         <aside className={styles.summary}>
           <h2>Resumen</h2>
+          <CurrencySelector />
           <p>
             <span>Subtotal</span>
             <strong>
-              ${Number(cart.summary.subtotal).toLocaleString("es-MX")}
+              <CurrencyPrice amount={cart.summary.subtotal} />
             </strong>
           </p>
           <p>
             <span>Descuento</span>
             <strong>
-              -${Number(cart.summary.discount).toLocaleString("es-MX")}
+              −<CurrencyPrice amount={cart.summary.discount} />
             </strong>
           </p>
           <p className={styles.total}>
             <span>Total</span>
             <strong>
-              ${Number(cart.summary.total).toLocaleString("es-MX")} MXN
+              <CurrencyPrice amount={cart.summary.total} />
             </strong>
           </p>
+          <CurrencyAttribution />
           <Link
             className={!cart.items.length ? styles.disabled : ""}
             href={cart.items.length ? "/checkout" : "#"}

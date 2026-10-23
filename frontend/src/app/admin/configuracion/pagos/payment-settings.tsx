@@ -42,7 +42,8 @@ export function PaymentSettings() {
     void apiFetch<Settings>("/admin/settings/payments")
       .then((settings) => {
         setForm(settings);
-        setWebhookUrl(new URL("/api/v1/payments/webhooks/stripe", window.location.origin).href);
+        const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+        setWebhookUrl(`${api.replace(/\/$/, "")}/payments/webhooks/stripe`);
       })
       .finally(() => setLoading(false));
   }, []);

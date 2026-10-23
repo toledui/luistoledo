@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Headers,
+  Header,
   Param,
   Patch,
   Post,
@@ -24,10 +25,13 @@ import {
   CouponCodeDto,
   CreateCouponDto,
   UpdatePaymentSettingsDto,
+  CurrencyQuoteDto,
+  ResumePaymentDto,
 } from './dto/sales.dto';
 import { SalesService } from './sales.service';
 import { ListOrdersDto } from './dto/list-orders.dto';
 import { CreatePaidCourseCheckoutDto } from '../paid-course/paid-course.dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller()
 export class SalesController {
@@ -79,6 +83,7 @@ export class SalesController {
       dto.program,
       dto.paymentOption,
       analyticsSessionId,
+      dto.currencyQuote,
     );
   }
   @Post('payments/stripe/confirm')
@@ -105,6 +110,19 @@ export class SalesController {
   paymentMethods() {
     return this.sales.paymentSettings();
   }
+  @Get('payments/currencies')
+  @Header('Cache-Control', 'private, no-store')
+  currencies(@Req() req: Request) {
+    return this.sales.currencyOptions(req.ip);
+  }
+
+  @Post('payments/currency-quote')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
+  @Header('Cache-Control', 'no-store')
+  currencyQuote(@Body() dto: CurrencyQuoteDto) {
+    return this.sales.currencyQuote(dto.amountMxn, dto.currency);
+  }
   @Get('admin/settings/payments')
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('settings.manage')
@@ -130,8 +148,12 @@ export class SalesController {
   }
   @Post('orders/:id/resume-payment')
   @UseGuards(AuthGuard)
-  resumePayment(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.sales.resumePayment(req.auth.sub, id);
+  resumePayment(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: ResumePaymentDto,
+  ) {
+    return this.sales.resumePayment(req.auth.sub, id, dto.currencyQuote);
   }
   @Get('orders/:id') @UseGuards(AuthGuard) order(
     @Param('id') id: string,

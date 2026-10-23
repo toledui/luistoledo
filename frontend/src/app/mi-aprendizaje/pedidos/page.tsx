@@ -3,7 +3,6 @@ import { apiFetch } from "@/lib/api";
 import {
   CheckCircle2,
   Clock3,
-  CreditCard,
   Landmark,
   LoaderCircle,
   ReceiptText,
@@ -12,6 +11,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import styles from "../../commerce.module.css";
+import { OrderCurrencyPayment } from "@/components/currency/order-currency-payment";
+import { useCurrency } from "@/components/currency/currency-context";
 type Order = {
   id: string;
   number: string;
@@ -42,6 +43,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function OrdersPageContent() {
+  const currencyContext = useCurrency();
   const searchParams = useSearchParams();
   const paymentCancelled = searchParams.get("cancelled") === "1";
   const cancelledOrderId = searchParams.get("order") ?? "";
@@ -58,13 +60,18 @@ function OrdersPageContent() {
       setNow(Date.now());
     });
   }, []);
-  async function resumePayment(orderId: string) {
+  async function resumePayment(orderId: string, currencyQuote?: string) {
     setResumingOrderId(orderId);
+    currencyContext?.lockCurrency(true);
     setResumeError(null);
     try {
       const result = await apiFetch<ResumePaymentResult>(
         `/orders/${orderId}/resume-payment`,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currencyQuote }),
+        },
       );
       window.location.assign(result.checkoutUrl);
     } catch (cause) {
@@ -76,6 +83,7 @@ function OrdersPageContent() {
             : "No fue posible reanudar el pago.",
       });
       setResumingOrderId("");
+      currencyContext?.lockCurrency(false);
     }
   }
   async function toggleReminders(
@@ -255,20 +263,13 @@ function OrdersPageContent() {
                     {(stripePending || transferPending) && (
                       <div className={styles.orderActions}>
                         {stripePending && (
-                          <button
-                            type="button"
-                            onClick={() => void resumePayment(order.id)}
-                            disabled={Boolean(resumingOrderId)}
-                          >
-                            {resumingOrderId === order.id ? (
-                              <LoaderCircle className={styles.spin} />
-                            ) : (
-                              <CreditCard />
-                            )}
-                            {resumingOrderId === order.id
-                              ? "Preparando pago…"
-                              : "Completar pago"}
-                          </button>
+                          <OrderCurrencyPayment
+                            amount={Number(order.total)}
+                            busy={Boolean(resumingOrderId)}
+                            onPay={(token) =>
+                              void resumePayment(order.id, token)
+                            }
+                          />
                         )}
                         {transferPending && (
                           <Link href={`/checkout/pendiente?order=${order.id}`}>

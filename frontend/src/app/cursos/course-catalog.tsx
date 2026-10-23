@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyPrice } from "@/components/currency/currency-context";
 import { apiFetch } from "@/lib/api";
 import {
   ArrowRight,
@@ -150,13 +151,13 @@ export function CourseCatalog() {
                     <div>
                       {course.salePrice && (
                         <del>
-                          ${Number(course.price).toLocaleString("es-MX")}
+                          <CurrencyPrice amount={course.price} />
                         </del>
                       )}
                       <strong>
                         {Number(course.salePrice || course.price) === 0
                           ? "Gratis"
-                          : `$${Number(course.salePrice || course.price).toLocaleString("es-MX")} MXN`}
+                          : <CurrencyPrice amount={course.salePrice || course.price} />}
                       </strong>
                     </div>
                     <Link href={`/cursos/${course.slug}`}>

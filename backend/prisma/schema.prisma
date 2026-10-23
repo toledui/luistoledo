@@ -898,6 +898,13 @@ model Payment {
   amount      Decimal       @db.Decimal(10, 2)
   currency    String        @default("MXN") @db.VarChar(3)
   externalId  String?       @unique
+  /// Customer charge in minor units; amount/currency above remain the integration price.
+  presentmentAmount Decimal? @db.Decimal(20, 0)
+  presentmentCurrency String? @db.VarChar(3)
+  checkoutAmount Decimal? @db.Decimal(20, 0)
+  checkoutCurrency String? @db.VarChar(3)
+  checkoutRate Decimal? @db.Decimal(24, 12)
+  checkoutRateAt DateTime?
   processedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

@@ -189,12 +189,16 @@ curl -X POST http://localhost:4000/api/v1/coupons/validate \
 | DELETE | `/cart/items/:id` | Eliminar item persistente |
 | DELETE | `/cart` | Vaciar carrito |
 | POST | `/checkout` | Crear pedido y pago |
+| GET | `/payments/currencies` | Monedas admitidas con cotización y moneda sugerida según IP; respuesta privada sin caché |
+| POST | `/payments/currency-quote` | Cotización firmada `{ amountMxn, currency }`, válida 15 minutos; límite de solicitudes |
 | POST | `/payments/stripe/confirm` | Confirmar retorno de Stripe mediante `orderId` y `sessionId` |
 | POST | `/payments/webhooks/stripe` | Webhook firmado de Stripe |
 | GET | `/orders` | Pedidos del usuario |
 | GET | `/orders/:id` | Detalle de un pedido propio |
 
 El webhook de Stripe requiere el cuerpo crudo y el encabezado `stripe-signature`. No debe invocarse manualmente ni colocarse detrás de middleware que modifique el cuerpo.
+
+`POST /checkout` y `POST /orders/:id/resume-payment` aceptan `currencyQuote`, el token devuelto por `/payments/currency-quote`. El backend verifica firma, vencimiento y total MXN del pedido; no acepta importes de cobro enviados por el navegador. La moneda seleccionada desactiva Adaptive Pricing para respetarla exactamente. Las transferencias se conservan en MXN.
 
 ### Administración
 

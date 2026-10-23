@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyPrice } from "@/components/currency/currency-context";
 import { BookOpen, ShoppingBag, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import {
@@ -139,11 +140,7 @@ export function CartButton() {
                         {item.title}
                       </Link>
                       <strong>
-                        $
-                        {Number(item.salePrice || item.price).toLocaleString(
-                          "es-MX",
-                        )}{" "}
-                        MXN
+                        <CurrencyPrice amount={item.salePrice || item.price} />
                       </strong>
                     </span>
                     <button
@@ -162,7 +159,7 @@ export function CartButton() {
               <footer>
                 <div>
                   <span>Total</span>
-                  <strong>${cart.total.toLocaleString("es-MX")} MXN</strong>
+                  <strong><CurrencyPrice amount={cart.total} /></strong>
                 </div>
                 <Link href="/checkout" onClick={() => cart.setOpen(false)}>
                   Ir al checkout

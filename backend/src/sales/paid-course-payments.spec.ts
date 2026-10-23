@@ -100,4 +100,32 @@ describe('Atomic payment confirmation shared by transfer and Stripe', () => {
     expect(prisma.enrollment.upsert).not.toHaveBeenCalled();
     expect(sendcorex.enrollment).not.toHaveBeenCalled();
   });
+  it('persists local presentment amounts inside the same transaction that fulfills the order', async () => {
+    const internal = sales as unknown as {
+      completePayment(
+        orderId: string,
+        paymentId: string,
+        provider: string,
+        externalId: string,
+        presentment: {
+          presentment_amount: number;
+          presentment_currency: string;
+        },
+      ): Promise<unknown>;
+    };
+    await internal.completePayment('deposit', 'payment', 'STRIPE', 'cs_test', {
+      presentment_amount: 2800,
+      presentment_currency: 'usd',
+    });
+    expect(prisma.payment.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'SUCCEEDED',
+          presentmentAmount: 2800,
+          presentmentCurrency: 'USD',
+        }) as unknown,
+      }),
+    );
+    expect(course.onPaid).toHaveBeenCalledWith(prisma, order, 'STRIPE');
+  });
 });

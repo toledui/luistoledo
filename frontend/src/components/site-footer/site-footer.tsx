@@ -1,9 +1,11 @@
 import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
+import { CurrencyAttribution } from "@/components/currency/currency-context";
 
 export function SiteFooter() {
   return (
     <footer className="site-footer">
+      <div className="container"><CurrencyAttribution /></div>
       <div className="container footer-grid">
         <div className="footer-brand">
           <Link className="brand footer-logo" href="/" aria-label="Ir al inicio">

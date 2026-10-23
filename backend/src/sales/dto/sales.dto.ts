@@ -9,6 +9,8 @@ import {
   IsArray,
   Max,
   Min,
+  Matches,
+  MaxLength,
 } from 'class-validator';
 
 export class AddCartItemDto {
@@ -19,11 +21,23 @@ export class CouponCodeDto {
   @IsArray() @IsString({ each: true }) courseIds!: string[];
 }
 export class CheckoutDto {
+  @IsOptional() @IsString() @MaxLength(2048) currencyQuote?: string;
   @IsOptional() @IsIn(['asistente-ia']) program?: 'asistente-ia';
   @IsOptional() @IsIn(['FULL', 'INSTALLMENTS']) paymentOption?:
     'FULL' | 'INSTALLMENTS';
   @IsOptional() @IsString() couponCode?: string;
   @IsIn(['STRIPE', 'BANK_TRANSFER']) paymentMethod!: 'STRIPE' | 'BANK_TRANSFER';
+}
+export class CurrencyQuoteDto {
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(10000000)
+  amountMxn!: number;
+  @Matches(/^[A-Z]{3}$/) currency!: string;
+}
+export class ResumePaymentDto {
+  @IsOptional() @IsString() @MaxLength(2048) currencyQuote?: string;
 }
 export class ConfirmStripeCheckoutDto {
   @IsString() orderId!: string;

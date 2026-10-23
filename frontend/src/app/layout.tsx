@@ -8,6 +8,7 @@ import { ScrollToTop } from "@/components/scroll-to-top/scroll-to-top";
 import { getSiteMetadata } from "@/lib/site-metadata";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { Suspense } from "react";
+import { CurrencyProvider } from "@/components/currency/currency-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,11 +39,11 @@ export default function RootLayout({
     >
       <body>
         <Suspense fallback={null}><AnalyticsProvider /></Suspense>
-        <CartProvider>
+        <CurrencyProvider><CartProvider>
           <ScrollToTop />
           <PublicBranding />
           <PublicShell>{children}</PublicShell>
-        </CartProvider>
+        </CartProvider></CurrencyProvider>
       </body>
     </html>
   );
