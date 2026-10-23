@@ -162,7 +162,9 @@ export class SalesService {
     const webhookSecret = dto.stripeWebhookSecret?.trim();
     if (secretKey || webhookSecret) {
       try {
-        checkEnvironmentKey(this.config.getOrThrow<string>('APP_ENCRYPTION_KEY'));
+        checkEnvironmentKey(
+          this.config.getOrThrow<string>('APP_ENCRYPTION_KEY'),
+        );
       } catch {
         throw new ServiceUnavailableException(
           'No se guardaron las claves: la clave de cifrado del proceso no coincide con backend/.env o no se pudo verificar. Revisa la configuración de PM2 y reinicia el backend antes de volver a guardar.',
@@ -177,8 +179,15 @@ export class SalesService {
         stripeEnabled: dto.stripeEnabled,
         stripeMode: dto.stripeMode,
         stripePublishableKey: dto.stripePublishableKey?.trim() || null,
-        ...(secretKey ? { stripeSecretKeyEncrypted: this.encryption.encrypt(secretKey) } : {}),
-        ...(webhookSecret ? { stripeWebhookSecretEncrypted: this.encryption.encrypt(webhookSecret) } : {}),
+        ...(secretKey
+          ? { stripeSecretKeyEncrypted: this.encryption.encrypt(secretKey) }
+          : {}),
+        ...(webhookSecret
+          ? {
+              stripeWebhookSecretEncrypted:
+                this.encryption.encrypt(webhookSecret),
+            }
+          : {}),
         bankTransferEnabled: dto.bankTransferEnabled,
         bankName: dto.bankName || null,
         bankBeneficiary: dto.bankBeneficiary || null,

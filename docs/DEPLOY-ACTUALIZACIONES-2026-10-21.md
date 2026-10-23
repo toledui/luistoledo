@@ -96,7 +96,7 @@ npm run db:deploy
 npm run db:status
 ```
 
-Si un comando falla, detente y conserva el mensaje. No uses `prisma migrate reset`, `prisma migrate dev`, `prisma db push`, `git reset --hard` ni `npm run setup` para corregir un deploy. No ejecutes `npm run db:seed`: no es necesario aquí. `db:deploy`, `db:generate` y `build` no ejecutan seed. El arranque `start:prod` del backend tiene un pre-script que aplica migraciones, por eso se revisan y aplican antes de reiniciar.
+Si un comando falla, detente y conserva el mensaje. No uses `prisma migrate reset`, `prisma migrate dev`, `prisma db push`, `git reset --hard` ni `npm run setup` para corregir un deploy. No ejecutes `npm run db:seed`: no es necesario aquí. `db:deploy`, `db:generate` y `build` no ejecutan seed. El arranque `start:prod` no aplica migraciones: revísalas y aplícalas explícitamente con `npm run db:deploy` antes de reiniciar.
 
 El backend debe tener `cwd` en `/var/www/luistoledo/backend` y ejecutar `dist/src/main.js`. El frontend usa `npm run start` con `cwd` en `frontend`. Corrige el ecosystem existente si sus rutas son distintas; no crees procesos duplicados.
 
