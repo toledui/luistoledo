@@ -50,8 +50,10 @@ export async function checkStoredSecrets(
     if (!actual) continue;
     // Use the database casing, matched against the static allowlist above.
     const identifier = Prisma.raw('`' + actual.columnName + '`');
-    const rows = await prisma.$queryRaw<{ value: string }[]>(Prisma.sql`
-      SELECT ${identifier} AS value FROM ${Prisma.raw('`' + actual.tableName + '`')}
+    const rows = await prisma.$queryRaw<
+      { id: number; value: string }[]
+    >(Prisma.sql`
+      SELECT id, ${identifier} AS value FROM ${Prisma.raw('`' + actual.tableName + '`')}
       WHERE ${identifier} IS NOT NULL
     `);
     for (const row of rows) {
@@ -59,7 +61,7 @@ export async function checkStoredSecrets(
         encryption.decrypt(row.value);
         checked++;
       } catch {
-        invalid.push(name);
+        invalid.push(`${name}${row.id === undefined ? '' : ` (id=${row.id})`}`);
         break;
       }
     }

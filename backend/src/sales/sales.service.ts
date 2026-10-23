@@ -19,6 +19,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import Stripe from 'stripe';
 import { EncryptionService } from '../crypto/encryption.service';
+import { checkEnvironmentKey } from '../crypto/secrets-check';
 import { EmailTemplateService } from '../email-templates/email-template.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCouponDto, UpdatePaymentSettingsDto } from './dto/sales.dto';
@@ -157,20 +158,27 @@ export class SalesService {
   }
 
   async updatePaymentSettings(dto: UpdatePaymentSettingsDto) {
+    const secretKey = dto.stripeSecretKey?.trim();
+    const webhookSecret = dto.stripeWebhookSecret?.trim();
+    if (secretKey || webhookSecret) {
+      try {
+        checkEnvironmentKey(this.config.getOrThrow<string>('APP_ENCRYPTION_KEY'));
+      } catch {
+        throw new ServiceUnavailableException(
+          'No se guardaron las claves: la clave de cifrado del proceso no coincide con backend/.env o no se pudo verificar. Revisa la configuración de PM2 y reinicia el backend antes de volver a guardar.',
+        );
+      }
+    }
     this.currencies?.reset();
-    const current = await this.paymentSettingsRecord();
+    await this.paymentSettingsRecord();
     const updated = await this.prisma.paymentProviderSetting.update({
       where: { id: 1 },
       data: {
         stripeEnabled: dto.stripeEnabled,
         stripeMode: dto.stripeMode,
         stripePublishableKey: dto.stripePublishableKey?.trim() || null,
-        stripeSecretKeyEncrypted: dto.stripeSecretKey?.trim()
-          ? this.encryption.encrypt(dto.stripeSecretKey.trim())
-          : current.stripeSecretKeyEncrypted,
-        stripeWebhookSecretEncrypted: dto.stripeWebhookSecret?.trim()
-          ? this.encryption.encrypt(dto.stripeWebhookSecret.trim())
-          : current.stripeWebhookSecretEncrypted,
+        ...(secretKey ? { stripeSecretKeyEncrypted: this.encryption.encrypt(secretKey) } : {}),
+        ...(webhookSecret ? { stripeWebhookSecretEncrypted: this.encryption.encrypt(webhookSecret) } : {}),
         bankTransferEnabled: dto.bankTransferEnabled,
         bankName: dto.bankName || null,
         bankBeneficiary: dto.bankBeneficiary || null,
