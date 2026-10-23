@@ -32,6 +32,20 @@ Instalar dependencias del backend (`npm ci --prefix backend`), generar Prisma y 
 
 Mantener `APP_ENCRYPTION_KEY` y las claves Stripe de la cuenta. Detrás de Nginx, configurar `TRUSTED_PROXY_CIDRS` solamente con los proxies reales para que Express resuelva la IP del visitante; no confiar en encabezados enviados directamente por cualquier cliente. La base GeoIP debe actualizarse con las actualizaciones de la dependencia. Geolocalización basada en [GeoLite2 de MaxMind](https://www.maxmind.com).
 
+### Protección del cifrado en actualizaciones
+
+Las dos migraciones del 23 de octubre solo agregan columnas a `Payment`; no modifican `PaymentProviderSetting` ni las claves cifradas. El error `Unsupported state or unable to authenticate data` demuestra un fallo de autenticación del cifrado, pero por sí solo no distingue entre una clave de cifrado distinta y un valor cifrado alterado.
+
+Antes de actualizar, conserva un respaldo protegido de la base y su `APP_ENCRYPTION_KEY` correspondiente. Tras instalar dependencias y ejecutar `npm run db:generate`, ejecuta desde la raíz `npm run secrets:check`. Comprueba en modo de solo lectura las credenciales existentes de Stripe, webhook, correo, Turnstile, Sendcorex y analítica. Muestra únicamente los nombres de los campos afectados; no imprime claves, texto descifrado ni valores cifrados. También detecta si `APP_ENCRYPTION_KEY` del proceso difiere del archivo `backend/.env`. Las tablas o columnas todavía inexistentes se omiten para permitir instalaciones nuevas y actualizaciones desde esquemas anteriores.
+
+`npm run db:deploy` ejecuta automáticamente esta validación antes y después de `prisma migrate deploy`. Si falla la comprobación previa, la migración no se ejecuta. Si falla la posterior, el comando termina con error: no revierte automáticamente el DDL de MySQL. El arranque mediante `npm run start:prod` utiliza el mismo procedimiento protegido. Ejecutar directamente `prisma migrate deploy` evita estas comprobaciones; usa los scripts del proyecto.
+
+El backend también comprueba el cifrado al arrancar con el entorno real de PM2. Si detecta un problema, escribe una alerta clara y mantiene el admin accesible para recuperar las credenciales. Los pagos con una credencial Stripe indescifrable responden con 503 y un mensaje público genérico, en lugar de un error criptográfico sin controlar.
+
+Si falta la clave original, vuelve a guardar las credenciales afectadas con la clave definitiva; los campos vacíos conservan los valores anteriores. Esta validación no rota claves, no repara ni reescribe secretos y no impide cambios manuales de configuración posteriores al despliegue. No requiere migraciones nuevas.
+
+En la instalación de producción verificada, la API escucha en el puerto **4010** (`PORT=4010`). Conserva ese puerto y el proxy existente; el 4000 de los ejemplos y del script smoke es un valor predeterminado, no un requisito de esta actualización.
+
 Pruebas: preferencia manual y país, cotizaciones alteradas/vencidas, proveedor caído, monedas sin decimales, cupones, cancelación y cambio de moneda, sesión anterior pagada/procesando, plan en parcialidades y transferencia MXN. `node backend/test/currency-smoke.cjs` debe ejecutarse desde `backend` como `node test/currency-smoke.cjs`: consulta la cuenta real y las tasas sin imprimir claves. Con `CURRENCY_TEST_SESSION=1` también crea y expira inmediatamente una sesión exclusivamente TEST, sin cobrar. Esta comprobación se realizó con USD. Con `CURRENCY_HTTP_SMOKE=1` comprueba los endpoints del backend que esté corriendo en el puerto 4000.
 
 Referencias: [monedas de la cuenta Stripe](https://docs.stripe.com/api/country_specs/object), [ExchangeRate-API público](https://www.exchangerate-api.com/docs/free), [Adaptive Pricing](https://docs.stripe.com/payments/currencies/localize-prices/adaptive-pricing?payment-ui=stripe-hosted).

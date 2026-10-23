@@ -13,6 +13,7 @@
     "db:migrate": "npm run prisma:migrate --prefix backend",
     "db:deploy": "npm run prisma:deploy --prefix backend",
     "db:status": "npm run prisma:status --prefix backend",
+    "secrets:check": "npm run secrets:check --prefix backend",
     "db:seed": "npm run prisma:seed --prefix backend",
     "setup": "npm install --prefix frontend && npm install --prefix backend && npm install --prefix mcp && npm run db:generate && npm run db:deploy && npm run db:seed"
   },

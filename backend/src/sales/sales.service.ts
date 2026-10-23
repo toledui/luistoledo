@@ -3,8 +3,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
   CourseStatus,
@@ -27,6 +29,7 @@ import { CurrenciesService } from './currencies.service';
 
 @Injectable()
 export class SalesService {
+  private readonly logger = new Logger(SalesService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
@@ -188,9 +191,7 @@ export class SalesService {
     const settings = await this.paymentSettingsRecord();
     if (!settings.stripeEnabled || !settings.stripeSecretKeyEncrypted)
       throw new BadRequestException('Stripe no está configurado');
-    const key = this.encryption
-      .decrypt(settings.stripeSecretKeyEncrypted)
-      .trim();
+    const key = this.decryptStripeSecret(settings.stripeSecretKeyEncrypted);
     const mode = settings.stripeMode === 'LIVE' ? 'live' : 'test';
     if (!key.startsWith(`sk_${mode}_`) && !key.startsWith(`rk_${mode}_`))
       throw new BadRequestException(
@@ -200,6 +201,19 @@ export class SalesService {
       client: new Stripe(key, { timeout: 5000, maxNetworkRetries: 0 }),
       settings,
     };
+  }
+
+  private decryptStripeSecret(value: string) {
+    try {
+      return this.encryption.decrypt(value).trim();
+    } catch {
+      this.logger.error(
+        'No se pudo descifrar una credencial de Stripe. Revisa APP_ENCRYPTION_KEY y ejecuta npm run secrets:check; recupera la clave original o vuelve a guardar la credencial en Configuración > Pagos.',
+      );
+      throw new ServiceUnavailableException(
+        'El servicio de pagos no está disponible temporalmente. Intenta más tarde.',
+      );
+    }
   }
 
   private async createStripeCheckoutSession(
@@ -899,12 +913,11 @@ export class SalesService {
     if (!settings.stripeWebhookSecretEncrypted)
       throw new BadRequestException('Webhook de Stripe no configurado');
     let event: Stripe.Event;
+    const webhookSecret = this.decryptStripeSecret(
+      settings.stripeWebhookSecretEncrypted,
+    );
     try {
-      event = client.webhooks.constructEvent(
-        rawBody,
-        signature,
-        this.encryption.decrypt(settings.stripeWebhookSecretEncrypted),
-      );
+      event = client.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch {
       throw new BadRequestException('Firma de webhook inválida');
     }
